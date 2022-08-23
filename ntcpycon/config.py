@@ -1,0 +1,110 @@
+import logging
+import sys
+
+import yaml
+
+import ntcpycon.abstract
+import ntcpycon.file_handler
+import ntcpycon.pcap_replay
+import ntcpycon.tcp_server
+import ntcpycon.ws_sender
+
+CONFIG_FILENAME = 'ntcpycon.yml'
+
+
+
+WSSender = ntcpycon.ws_sender.WSSender
+TCPServer = ntcpycon.tcp_server.TCPServer
+PCapReplay = ntcpycon.pcap_replay.PCapReplay
+FileWriter = ntcpycon.file_handler.FileWriter
+FileReceiver = ntcpycon.file_handler.FileReceiver
+
+
+
+def get_senders(senders_dict: dict,):
+    senders = []
+    for websocket in senders_dict.get('websockets', []):
+        uri = websocket.get('uri')
+        if not uri:
+            sys.exit('uri must be specified for websocket')
+        no_verify = websocket.get('no_verify', False)
+        senders.append(WSSender(uri, no_verify))
+    
+    if local_file := senders_dict.get('local_file'):
+        filename = local_file.get('filename')
+        if not filename:
+            sys.exit('filename must be specified to read local_file')
+        overwrite = local_file.get('overwrite', False)
+        senders.append(FileWriter(filename, overwrite))
+
+    if not senders:
+        sys.exit(f'At least one sender must be specified in {CONFIG_FILENAME}')
+    
+    return senders
+
+
+def get_receiver(queues: list, receiver: dict,):
+
+    if tcp_server := receiver.get('tcp_server', {}):
+        port = tcp_server.get('port')
+        if not port:
+            sys.exit('port must be specified to start tcp server')
+        return TCPServer(queues, port)
+
+    elif local_file := receiver.get('local_file', {}):
+        filename = local_file.get('filename')
+        if not filename:
+            sys.exit('filename must be specified to read local_file')
+        return FileReceiver(queues, filename)
+
+    elif packet_capture:= receiver.get('packet_capture'):
+        filename = packet_capture.get('filename')
+        dst = packet_capture.get('dst')
+        length = packet_capture.get('length')
+        if not filename:
+            sys.exit('filename must be specified to read packet_capture')
+        if not dst:
+            sys.exit('dst must be specified to read packet_capture')
+        if not length:
+            sys.exit('length must be specified to read packet_capture')
+        return PCapReplay(queues, filename, dst, length)
+    
+    sys.exit(f'At least one receiver must be specified in {CONFIG_FILENAME}')
+
+
+
+
+def set_logging(debug: bool):
+    level = logging.DEBUG if debug else logging.INFO
+    logger = logging.getLogger()
+    logger.setLevel(level)
+    format = logging.Formatter(
+        "{name} - {funcName} - {lineno} - {levelname}: {message}", style="{"
+    )
+    streamhandler = logging.StreamHandler()
+    streamhandler.setFormatter(format)
+    streamhandler.setLevel(level)
+    logger.addHandler(streamhandler)
+
+
+
+def get_receiver_and_senders():
+    try:
+        with open(CONFIG_FILENAME) as file:
+            config = yaml.safe_load(file)
+    except Exception as exc:
+        sys.exit(f'Unable to load config: {type(exc).__name__}: {exc!s}')
+
+    senders_dict = config.get('senders', {})
+    receiver_dict = config.get('receiver', {})
+    debug_bool = config.get('debug', False)
+    
+    set_logging(debug_bool)
+
+    senders = get_senders(senders_dict)
+
+    queues = [sender.queue for sender in senders]
+
+    receiver = get_receiver(queues, receiver_dict)
+
+    return receiver, senders

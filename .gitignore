@@ -1,1 +1,8 @@
 *.pyc
+*.bframes
+*.pcap
+
+*.yml
+!example.yml
+
+ignore_*
