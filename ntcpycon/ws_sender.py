@@ -1,4 +1,5 @@
 import asyncio
+import itertools
 import logging
 import ssl
 
@@ -11,6 +12,7 @@ import ntcpycon.pcap_replay
 logger = logging.getLogger()
 logger.addHandler(logging.NullHandler())
 
+INFO_CYCLE = 1500
 
 class WSSender(ntcpycon.abstract.Sender):
     def __init__(self, uri: str, no_verify=False):
@@ -21,9 +23,10 @@ class WSSender(ntcpycon.abstract.Sender):
             {"ssl": ssl._create_unverified_context()} if no_verify else {}
         )
         self.stopped = False
+        self.masked_uri = '/'.join(self.uri.split('/')[:-1]) + "/<hidden>"
 
     def __repr__(self):
-        uri = self.uri
+        uri = self.masked_uri
         no_verify = self.no_verify
         return f"{type(self).__name__}({uri=}, {no_verify=})"
 
@@ -32,7 +35,11 @@ class WSSender(ntcpycon.abstract.Sender):
             logger.info(f"Received from websocket: {message}")
 
     async def write_handler(self, websocket):
+        ticker = itertools.cycle(range(INFO_CYCLE))
+        frame_count = 0
         while True:
+            if not next(ticker):
+                logger.info(f"Web Socket to {self.masked_uri} open.  Frame Send Count: {frame_count}")
             if self.stopped:
                 logger.debug("Stopping")
                 break
@@ -42,8 +49,9 @@ class WSSender(ntcpycon.abstract.Sender):
                     logger.info("Empty message received.  Stopping.")
                     break
                 else:
-                    logger.debug(f"Msg len: {len(message)} -> {self.uri}")
+                    logger.debug(f"Msg len: {len(message)} -> {self.masked_uri}")
                     await websocket.send(message)
+                    frame_count += 1
             except Exception as exc:
                 logger.error(f"{type(exc).__name__}: {exc!s}")
                 break
