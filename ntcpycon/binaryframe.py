@@ -33,7 +33,8 @@ class BinaryFrame:
     GAME_TYPE = 1
     PLAYER_ID = 0
     FIRST_BYTE = (VERSION << 5 | GAME_TYPE << 3 | PLAYER_ID).to_bytes(
-        1, byteorder="big",
+        1,
+        byteorder="big",
     )
 
     def __init__(self, payload: bytes):

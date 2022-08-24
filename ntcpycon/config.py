@@ -78,7 +78,8 @@ def set_logging(debug: bool):
     logger = logging.getLogger()
     logger.setLevel(level)
     format = logging.Formatter(
-        "{name} - {funcName} - {lineno} - {levelname}: {message}", style="{",
+        "{name} - {funcName} - {lineno} - {levelname}: {message}",
+        style="{",
     )
     streamhandler = logging.StreamHandler()
     streamhandler.setFormatter(format)
@@ -89,10 +90,10 @@ def set_logging(debug: bool):
 
 
 def get_receiver_and_senders():
-    usage = f'ntcpycon <config file>'
+    usage = f"ntcpycon <config file>"
     if len(sys.argv) < 2:
         sys.exit(usage)
-    elif sys.argv[1].startswith('-h') or sys.argv[1].startswith('--h'):
+    elif sys.argv[1].startswith("-h") or sys.argv[1].startswith("--h"):
         sys.exit(usage)
 
     config_file = sys.argv[1]

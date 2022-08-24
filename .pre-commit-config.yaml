@@ -12,3 +12,8 @@ repos:
     hooks:
     -   id: add-trailing-comma
         args: [--py36-plus]
+
+-   repo: https://github.com/psf/black
+    rev: 22.6.0
+    hooks:
+    -   id: black
