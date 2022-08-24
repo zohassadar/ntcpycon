@@ -76,8 +76,8 @@ class BinaryFrame:
         max = 0xF_FF_FF_FF
         if self.time is not None:
             self.time = int(self.time * 1000) & max
-        elif self.time is None:
-            logger.error(f"Unexpected Time Value: {self.time=}")
+        elif self.time is not None:
+            logger.debug(f"Unexpected Time Value: {self.time=}")
             self.time = max
         else:
             self.time = max
@@ -89,7 +89,7 @@ class BinaryFrame:
             if value is not None and value.isdigit():
                 setattr(self, stat, int(value) & max)
             elif value is not None:
-                logger.error(f"Unexpected Piece Stat Value: {stat=} {value=}")
+                logger.debug(f"Unexpected Piece Stat Value: {stat=} {value=}")
                 setattr(self, stat, max)
             else:
                 setattr(self, stat, max)
@@ -108,7 +108,7 @@ class BinaryFrame:
         if score is not None and score.isdigit():
             self.score = int(score) & max
         elif score is not None:
-            logger.error(f"Unexpected Score Value: {score=}")
+            logger.debug(f"Unexpected Score Value: {score=}")
             self.score = max
         else:
             self.score = max
@@ -119,7 +119,7 @@ class BinaryFrame:
         if level is not None and level.isdigit():
             self.level = int(level) & max
         elif level is not None:
-            logger.error(f"Unexpected Level Value: {level=}")
+            logger.debug(f"Unexpected Level Value: {level=}")
             self.level = max
         else:
             self.level = max
