@@ -37,7 +37,7 @@ class WebSocketPayload:
 
         first_byte, blob = blob[0], blob[1:]
         logger.debug(
-            f"First byte has int value of {first_byte}.  Remaining length is {len(blob)}"
+            f"First byte has int value of {first_byte}.  Remaining length is {len(blob)}",
         )
 
         self.fin = 1 if first_byte & 0b10000000 else 0
@@ -57,7 +57,7 @@ class WebSocketPayload:
 
         second_byte, blob = blob[0], blob[1:]
         logger.debug(
-            f"Second byte has int value of {second_byte}.  Remaining length is {len(blob)}"
+            f"Second byte has int value of {second_byte}.  Remaining length is {len(blob)}",
         )
 
         self.mask = 1 if second_byte & 0b10000000 else 0
@@ -79,7 +79,7 @@ class WebSocketPayload:
         if self.mask:
             self.key, blob = blob[:4], blob[4:]
             logger.debug(
-                f"Mask is {self.key!r}.  Remaining length of data is {len(blob)}"
+                f"Mask is {self.key!r}.  Remaining length of data is {len(blob)}",
             )
         else:
             self.data = blob
@@ -131,7 +131,7 @@ def filter_packets_with_raw(
         p for p in packets if isinstance(p.payload.payload.payload, Raw)
     ]
     logger.debug(
-        f"Filtered {len(packets)} -> {len(packets_with_payload)} - Raw payload"
+        f"Filtered {len(packets)} -> {len(packets_with_payload)} - Raw payload",
     )
     return packets_with_payload
 
@@ -142,7 +142,7 @@ def filter_payloads_by_len(
 ) -> list[WebSocketPayload]:
     payloads_by_len = [p for p in payloads if p.len == length]
     logger.debug(
-        f"Filtered {len(payloads)} -> {len(payloads_by_len)} - Length of {length}"
+        f"Filtered {len(payloads)} -> {len(payloads_by_len)} - Length of {length}",
     )
     return payloads_by_len
 
@@ -207,13 +207,12 @@ class PCapReplay(Receiver):
         self.loaded_frames = get_bytes_from_pcap(filename, dst, length)
         logger.info(f"Loaded {len(self.loaded_frames)} from {filename}")
 
-
     def __repr__(self):
-        queues=self.queues
-        filename=self.filename
-        dst=self.dst
+        queues = self.queues
+        filename = self.filename
+        dst = self.dst
         length = self.length
-        return f'{type(self).__name__}({queues=}, {filename=}, {dst=}, {length=})'
+        return f"{type(self).__name__}({queues=}, {filename=}, {dst=}, {length=})"
 
     async def receive(self):
         logger.info("Replay started")

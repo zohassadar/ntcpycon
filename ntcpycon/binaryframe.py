@@ -33,12 +33,15 @@ class BinaryFrame:
     GAME_TYPE = 1
     PLAYER_ID = 0
     FIRST_BYTE = (VERSION << 5 | GAME_TYPE << 3 | PLAYER_ID).to_bytes(
-        1, byteorder="big"
+        1, byteorder="big",
     )
 
     def __init__(self, payload: bytes):
+        self.binary_frame = b""
         self.original = payload
         self.payload = decode_payload(payload)
+        if not self.payload:
+            return
         self.lines = self.payload.get("lines")
         self.level = self.payload.get("level")
         self.score = self.payload.get("score")
@@ -54,7 +57,6 @@ class BinaryFrame:
         self.L = self.payload.get("L")
         self.I = self.payload.get("I")
 
-        self.binary_frame = b""
         # Convert everything to a number that works with the binary structure
         try:
             self.normalize_score()
@@ -66,7 +68,7 @@ class BinaryFrame:
         except Exception as e:
             logger.error(f"Exception normalizing {type(e)}: {e!s}")
         logger.debug(
-            f"Frame: {self.lines=} {self.level=} {self.score=} {self.preview=} {self.time=} {self.T=} {self.J=} {self.Z=} {self.O=} {self.S=} {self.L=} {self.I=}"
+            f"Frame: {self.lines=} {self.level=} {self.score=} {self.preview=} {self.time=} {self.T=} {self.J=} {self.Z=} {self.O=} {self.S=} {self.L=} {self.I=}",
         )
 
     def normalize_time(self):

@@ -23,10 +23,9 @@ class WSSender(ntcpycon.abstract.Sender):
         self.stopped = False
 
     def __repr__(self):
-        uri=self.uri
-        no_verify=self.no_verify
-        return f'{type(self).__name__}({uri=}, {no_verify=})'
-
+        uri = self.uri
+        no_verify = self.no_verify
+        return f"{type(self).__name__}({uri=}, {no_verify=})"
 
     async def read_handler(self, websocket):
         async for message in websocket:
@@ -40,7 +39,7 @@ class WSSender(ntcpycon.abstract.Sender):
             try:
                 message = await self.queue.get()
                 if not message:
-                    logger.info("No message.  Stopping.")
+                    logger.info("Empty message received.  Stopping.")
                     break
                 else:
                     logger.debug(f"Msg len: {len(message)} -> {self.uri}")

@@ -11,6 +11,9 @@ websockets = "^10.3"
 scapy = "^2.4.5"
 PyYAML = "^6.0"
 
+[tool.poetry.scripts]
+ntcpycon = 'ntcpycon.connect:start_connect'
+
 [tool.poetry.dev-dependencies]
 pre-commit = "^2.20.0"
 black = "^22.6.0"

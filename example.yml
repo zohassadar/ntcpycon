@@ -1,0 +1,43 @@
+# Example showing all config options
+# Remove everything not needed before using.
+
+
+# Set to true to enable debugging
+debug: false
+
+
+# Specify a single receiver
+receiver:
+  # Run a TCP server.
+  # Expects to receive frames from https://github.com/alex-ong/NESTrisOCR
+  tcp_server:
+    port: 3338
+
+  # Replay a file containing saved frames
+  local_file:
+    filename: example.bframes
+
+  # Extract frames from a packet capture.  This option was most likely only useful for development.
+  packet_capture:
+    filename: fceux_connector_capture.pcap
+    dst: 192.168.100.100
+    length: 71
+
+
+# Specify 1 or more senders
+senders:
+  websockets:
+  #   # Remote server, secure
+    - uri: wss://nestrischamps.herokuapp.com/ws/room/producer/<get from your settings page>
+
+  #   # Local setup, unsecure
+    - uri: ws://192.168.100.100:5000/ws/room/producer/PLAYER1
+
+    # Local setup using self signed cert
+    - uri: wss://192.168.100.100:5000/ws/room/producer/PLAYER1
+      no_verify: true
+
+  # Specify optional local_files
+  local_file:
+    filename: example.bframes
+    overwrite: true

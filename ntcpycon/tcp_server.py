@@ -23,9 +23,9 @@ class TCPServer(Receiver):
         self.stopped = False
 
     def __repr__(self):
-        queues=self.queues
-        port=self.port
-        return f'{type(self).__name__}({queues=}, {port=})'
+        queues = self.queues
+        port = self.port
+        return f"{type(self).__name__}({queues=}, {port=})"
 
     async def receive(self):
         tcp_server = await asyncio.start_server(
@@ -68,7 +68,7 @@ class TCPServer(Receiver):
                 payload_length = int.from_bytes(payload_lengthb, byteorder="little")
                 if payload_length > EXPECTED_MAX:
                     logger.error(
-                        f"Payload length of {payload_length} possibly incorrect.  Flushing buffer"
+                        f"Payload length of {payload_length} possibly incorrect.  Flushing buffer",
                     )
                     # Sometimes this reads from the middle of a stream and the length shows up as a huge number
                     # If this happens then whatever is in the buffer is thrown away
@@ -78,6 +78,9 @@ class TCPServer(Receiver):
                 logger.debug(f"Received {len(payload)} bytes")
 
                 frame = BinaryFrame(payload)
+                if not frame.binary_frame:
+                    logger.info(f"Empty binary frame received")
+                    continue
                 for queue in self.queues:
                     await queue.put(frame.binary_frame)
 
