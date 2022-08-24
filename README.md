@@ -36,4 +36,4 @@ senders:
 
 ## Credit
 
-Thanks to [NESTrisChamps](https://github.com/timotheeg/nestrischamps) and [NESTrisOCR](https://github.com/alex-ong/NESTrisOCR) for these awesome projects.  Also thanks to [nestrischamps-emulator-connector](https://github.com/Stabyourself/nestrischamps-emulator-connector) for showing a path to making this happen.
+Thanks to [NESTrisChamps](https://github.com/timotheeg/nestrischamps) for such an awesome project.  Thanks for [this post](https://github.com/timotheeg/nestrischamps/issues/107) showing that I'm not the only one that wanted this feature and also for the very helpful hints on how to make it happen.  Thanks to [NESTrisOCR](https://github.com/alex-ong/NESTrisOCR) for the great source of information.  Also thanks to [nestrischamps-emulator-connector](https://github.com/Stabyourself/nestrischamps-emulator-connector) for being a guide on how to make this happen.
