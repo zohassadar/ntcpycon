@@ -37,7 +37,7 @@ senders:
     - uri: wss://192.168.100.100:5000/ws/room/producer/PLAYER1
       no_verify: true
 
-  # Specify optional local_files
+  # Specify optional local_file
   local_file:
     filename: example.bframes
     overwrite: true
