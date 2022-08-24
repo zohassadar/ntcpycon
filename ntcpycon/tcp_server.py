@@ -93,9 +93,9 @@ class TCPServer(Receiver):
                 if not frame.binary_frame:
                     logger.info(f"Empty binary frame received")
                     continue
+                frame_count += 1
                 for queue in self.queues:
                     await queue.put(frame.binary_frame)
-                    frame_count += 1
 
             except Exception as exc:
                 logger.error(f"{type(exc).__name__}: {exc!s}")
