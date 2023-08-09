@@ -28,7 +28,7 @@ receiver:
 senders:
   websockets:
   #   # Remote server, secure
-    - uri: wss://nestrischamps.herokuapp.com/ws/room/producer/<get from your settings page>
+    - uri: wss://nestrischamps.io/ws/room/producer/<get from your settings page>
 
   #   # Local setup, unsecure
     - uri: ws://192.168.100.100:5000/ws/room/producer/PLAYER1
