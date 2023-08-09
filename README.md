@@ -20,7 +20,7 @@ Ctrl+C will cause the script to exit, but it takes 10-15 seconds for the connect
 
 ## Example Starting Config
 
-If you have an account on [NESTrisChamps](https://nestrischamps.herokuapp.com) get your secret from [here](https://nestrischamps.herokuapp.com/settings).  Save the following as a `.yml` or `.yaml` file, whichever you prefer.
+If you have an account on [NESTrisChamps](https://nestrischamps.io) get your secret from [here](https://nestrischamps.io/settings).  Save the following as a `.yml` or `.yaml` file, whichever you prefer.
 
 ```
 receiver:
@@ -29,7 +29,7 @@ receiver:
 
 senders:
   websockets:
-    - uri: wss://nestrischamps.herokuapp.com/ws/room/producer/<secret>
+    - uri: wss://nestrischamps.io/ws/room/producer/<secret>
 
 ```
 
