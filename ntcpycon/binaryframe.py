@@ -2,6 +2,7 @@ import functools
 import json
 import logging
 import re
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -15,6 +16,12 @@ PIECE_TO_VALUE = {
     "L": 5,
     "I": 6,
 }
+
+RAM_TO_NTC_TILES = defaultdict(lambda: 1)
+RAM_TO_NTC_TILES[0x7B] = 1
+RAM_TO_NTC_TILES[0x7C] = 3
+RAM_TO_NTC_TILES[0x7D] = 2
+RAM_TO_NTC_TILES[0xEF] = 0
 
 
 def decode_payload(payload: bytes) -> dict:
@@ -109,6 +116,10 @@ class BinaryFrame3:
         _payload[14:23] = self.stats
         _payload[24:] = self.compressed
         return _payload
+
+    def set_playfield_from_memory(self, data):
+        for index, tile in enumerate(data):
+            self.playfield[index] = RAM_TO_NTC_TILES[tile]
 
 
 class BinaryFrame:
