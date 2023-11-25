@@ -6,7 +6,6 @@ import ssl
 from websockets.client import connect
 
 import ntcpycon.abstract
-import ntcpycon.binaryframe
 import ntcpycon.pcap_replay
 
 logger = logging.getLogger()

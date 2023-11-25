@@ -3,10 +3,12 @@ import itertools
 import logging
 
 import ntcpycon.abstract
+import ntcpycon.nestrisocr
 import ntcpycon.binaryframe
 
-BinaryFrame = ntcpycon.binaryframe.BinaryFrame
+NOCRPayload = ntcpycon.nestrisocr.NOCRPayload
 Receiver = ntcpycon.abstract.Receiver
+BinaryFrame3 = ntcpycon.binaryframe.BinaryFrame3
 
 logger = logging.getLogger()
 logger.addHandler(logging.NullHandler())
@@ -89,13 +91,15 @@ class TCPServer(Receiver):
                 payload = await client_reader.read(payload_length)
                 logger.debug(f"Received {len(payload)} bytes")
 
-                frame = BinaryFrame(payload)
-                if not frame.binary_frame:
-                    logger.info(f"Empty binary frame received")
-                    continue
+                nocrpayload = NOCRPayload(payload)
+                bframe = BinaryFrame3.from_nestris_ocr(nocrpayload)
+                # todo: add dedup code here
+                # if not frame.binary_frame:
+                #     logger.info(f"Empty binary frame received")
+                #     continue
                 frame_count += 1
                 for queue in self.queues:
-                    await queue.put(frame.binary_frame)
+                    await queue.put(bframe.payload)
 
             except Exception as exc:
                 logger.error(f"{type(exc).__name__}: {exc!s}")

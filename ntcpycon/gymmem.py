@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,12 @@ to_game:
 16
 
 """
+
+RAM_TO_NTC_TILES = defaultdict(lambda: 1)
+RAM_TO_NTC_TILES[0x7B] = 1
+RAM_TO_NTC_TILES[0x7C] = 3
+RAM_TO_NTC_TILES[0x7D] = 2
+RAM_TO_NTC_TILES[0xEF] = 0
 
 
 BLANK_TILE = 0xEF
@@ -282,3 +289,15 @@ class GymMemory:
             ...
         else:
             raise RuntimeError(f"Unexpected playstate {self.playstate}")
+        
+    @property
+    def compressed(self) -> bytearray:
+        _compressed = bytearray(50)
+        for i in range(50):
+            _compressed[i] = (
+                (self.playfield[i * 4] & 3) << 6
+                | (self.playfield[i * 4 + 1] & 3) << 4
+                | (self.playfield[i * 4 + 2] & 3) << 2
+                | (self.playfield[i * 4 + 3] & 3)
+            )
+        return _compressed

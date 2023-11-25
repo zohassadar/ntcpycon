@@ -1,6 +1,7 @@
 from ntcpycon import __version__
 
 import ntcpycon.abstract
+import ntcpycon.nestrisocr
 import ntcpycon.binaryframe
 import ntcpycon.config
 import ntcpycon.connect
