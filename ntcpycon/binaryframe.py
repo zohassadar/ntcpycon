@@ -37,15 +37,21 @@ class BinaryFrame3:
     @classmethod
     def from_nestris_ocr(cls, ocr_payload: NOCRPayload) -> BinaryFrame3:
         result =  cls()
-        result.playfield = ocr_payload.field_bytes
         stats = ocr_payload.stats
         result.t = stats["T"]
+        logger.debug(f"{result.t=}")
         result.j = stats["J"]
+        logger.debug(f"{result.j=}")
         result.z = stats["Z"]
+        logger.debug(f"{result.z=}")
         result.o = stats["O"]
+        logger.debug(f"{result.o=}")
         result.s = stats["S"]
+        logger.debug(f"{result.s=}")
         result.l = stats["L"]
+        logger.debug(f"{result.l=}")
         result.i = stats["I"]
+        logger.debug(f"{result.i=}")
         result.elapsed = ocr_payload.time
         logger.debug(f"{result.elapsed=}")
         result.game_id = ocr_payload.gameid
@@ -58,6 +64,8 @@ class BinaryFrame3:
         logger.debug(f"{result.score=}")
         result.preview = ocr_payload.preview
         logger.debug(f"{result.preview=}")
+        result.playfield = ocr_payload.field_bytes
+        logger.debug(f"{result.playfield=}")
         return result
 
     @property
