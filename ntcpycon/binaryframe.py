@@ -170,7 +170,7 @@ class BinaryFrame:
         max = 0xF_FF_FF_FF
         if self.time is not None:
             self.time = int(self.time * 1000) & max
-        elif self.time is not None:
+        elif self.time is not None: # lol what?
             logger.debug(f"Unexpected Time Value: {self.time=}")
             self.time = max
         else:
