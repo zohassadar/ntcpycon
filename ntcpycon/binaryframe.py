@@ -82,6 +82,27 @@ class BinaryFrame3:
         _stats[8] = (self.i & 0b0000111111) << 2
         return _stats
 
+    @property
+    def compare_data(self):
+        result = []
+        result.append(self.t)
+        result.append(self.j)
+        result.append(self.z)
+        result.append(self.o)
+        result.append(self.s)
+        result.append(self.l)
+        result.append(self.i)
+        result.append(self.game_id)
+        result.append(self.lines)
+        result.append(self.level)
+        result.append(self.score)
+        result.append(self.instant_das)
+        result.append(self.preview)
+        result.append(self.cur_piece)
+        result.append(self.cur_piece_das)
+        result.extend(self.playfield)
+        return tuple(result)
+
 
     @property
     def payload(self):

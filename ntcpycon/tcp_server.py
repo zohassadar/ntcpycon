@@ -1,6 +1,7 @@
 import asyncio
 import itertools
 import logging
+import time
 
 import ntcpycon.abstract
 import ntcpycon.nestrisocr
@@ -16,6 +17,8 @@ logger.addHandler(logging.NullHandler())
 EXPECTED_MAX = 1000
 
 INFO_CYCLE = 1500
+
+IDLE_MAX = 30
 
 
 class TCPServer(Receiver):
@@ -63,6 +66,8 @@ class TCPServer(Receiver):
     ):
         ticker = itertools.cycle(range(INFO_CYCLE))
         frame_count = 0
+        _last_frame_sent = ()
+        _last_frame_sent_when = time.time()
         while True:
             if not next(ticker):
                 logger.info(f"TCP Connection Open: Frame Receive Count: {frame_count}")
@@ -93,11 +98,12 @@ class TCPServer(Receiver):
 
                 nocrpayload = NOCRPayload(payload)
                 bframe = BinaryFrame3.from_nestris_ocr(nocrpayload)
-                # todo: add dedup code here
-                # if not frame.binary_frame:
-                #     logger.info(f"Empty binary frame received")
-                #     continue
+                now = time.time()
+                if (bframe.compare_data == _last_frame_sent) and (now - _last_frame_sent_when < IDLE_MAX):
+                    logger.debug(f"Skipping transmit of frame")
                 frame_count += 1
+                _last_frame_sent_when = now
+                _last_frame_sent = bframe.compare_data
                 for queue in self.queues:
                     await queue.put(bframe.payload)
 
