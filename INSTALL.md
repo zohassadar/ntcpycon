@@ -20,6 +20,7 @@ Make sure .venv environment is active
 
     git submodule update --remote
     cd python-edlinkn8
+    pip install -r requirements.txt
     pip install -e .
 
 ## Create GYM Rom & Patch
