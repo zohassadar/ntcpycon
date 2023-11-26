@@ -2,3 +2,6 @@
 	path = TetrisGYM
 	url = https://github.com/zohassadar/TetrisGYM
 	branch = ed2ntc
+[submodule "python-edlinkn8"]
+	path = python-edlinkn8
+	url = https://github.com/zohassadar/python-edlinkn8
