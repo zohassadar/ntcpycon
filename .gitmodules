@@ -1,0 +1,5 @@
+[submodule "TetrisGYM"]
+	path = TetrisGYM
+	url = https://github.com/zohassadar/TetrisGYM
+	branch = ed2ntc
+

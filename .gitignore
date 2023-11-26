@@ -6,3 +6,5 @@
 !example.yml
 
 ignore_*
+
+.vscode/*
