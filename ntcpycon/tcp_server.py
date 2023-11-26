@@ -18,7 +18,7 @@ EXPECTED_MAX = 1000
 
 INFO_CYCLE = 1500
 
-IDLE_MAX = 30
+IDLE_MAX = .25
 
 
 class TCPServer(Receiver):
