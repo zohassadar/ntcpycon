@@ -1,14 +1,27 @@
-# [NESTrisOCR](https://github.com/alex-ong/NESTrisOCR) to [NESTrisChamps](https://github.com/timotheeg/nestrischamps) Connector
+# [NESTrisChamps](https://github.com/timotheeg/nestrischamps) Connector
 
-This receives frame data from NESTrisOCR and forwards it to one or more NESTrisChamps servers via a websocket.  Currently translates the data into a Version 1 [Binary Frame](https://github.com/timotheeg/nestrischamps/blob/main/public/js/BinaryFrame.js).    
+Connector for NESTrisChamps that can receive game data from the following sources:
+
+* [NESTrisOCR](https://github.com/alex-ong/NESTrisOCR)
+* directly from Everdrive (Coming soon!)
+
+## NESTrisOCR
+
+This receives frame data from NESTrisOCR and forwards it to one or more NESTrisChamps servers via a websocket.  Currently translates the data into a Version 3 [Binary Frame](https://github.com/timotheeg/nestrischamps/blob/main/public/js/BinaryFrame.js).    
 
 Can also save the received frames to a file.  The frames can be played back to a NESTrisChamps server at a later time.
 
+## Everdrive
+
+*Coming Soon!*
+
+This uses a modified version of [TetrisGYM](https://github.com/zohassadar/TetrisGYM/tree/ed2ntc) and a USB connection to an [Everdrive Pro](https://krikzz.com/our-products/cartridges/everdrive-n8-pro-72pin.html) to get game data directly.
+
 ## Setup
 
-Works in Python 3.10 on windows.  Recommend installing in a virtual environment.  When installed, there's an entrypoint `ntcpycon`.
+See [**INSTALL.md**](INSTALL.md) for installation steps
 
-Set up a configuration yaml file and run `ntcpycon config.yml`.
+Set up a configuration yaml file and run `ntcpycon <filename>.yml`.
 
 Without installing, can be run as a module:  `python -m ntcpycon` 
 
