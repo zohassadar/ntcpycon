@@ -207,9 +207,7 @@ class GymMemory:
         if self.playstate == 8:
             self.spawn_autorepeat_x = self.autorepeat_x
         
-        if self.game_mode == 4 and self._previous_state['game_mode'] != 4:
-            # This is broken logic that needs to be fixed
-            self._playfield[:] = [BLANK_TILE] * 200
+        if self.game_start != self._previous_state['game_start']:
             self.game_id += 1
 
         # update field according to playstate
