@@ -185,8 +185,8 @@ class GymMemory:
     _previous_state: dict = dataclasses.field(default_factory=dict)
 
     # derived:
-    _start_time: int = dataclasses.field(default_factory=lambda: time.time())
-    time: int = 0
+    _start_time: float = dataclasses.field(default_factory=lambda: time.time())
+    elapsed: int = 0
     game_id: int = 0
     spawn_autorepeat_x: int = 0
 
@@ -197,7 +197,7 @@ class GymMemory:
     playstate: int = 0
 
     def _general_update_start(self):
-        self.time = int((time.time() - self._start_time) * 1000)
+        self.elapsed = int((time.time() - self._start_time) * 1000)
         self._previous_state = {
             k: v for k, v in dataclasses.asdict(self).items() if not k.startswith("_")
         }

@@ -59,7 +59,7 @@ class BinaryFrame3:
         result.i = gym.stats_i
         logger.debug(f"{result.i=}")
 
-        result.elapsed = gym.time
+        result.elapsed = gym.elapsed
         logger.debug(f"{result.elapsed=}")
 
         result.game_id = gym.game_id

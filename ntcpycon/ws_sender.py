@@ -57,7 +57,7 @@ class WSSender(ntcpycon.abstract.Sender):
         logger.info("while loop broken")
 
     async def send(self):
-        websocket = await connect(self.uri, **self.connect_kwargs)
+        websocket = await connect(self.uri, **self.connect_kwargs) # type: ignore
         await asyncio.gather(
             self.read_handler(websocket),
             self.write_handler(websocket),
