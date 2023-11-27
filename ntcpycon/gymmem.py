@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 this is an idea for later:
 
 MESSAGE_HEADER = 0xA55A
-MESSAGE_FOODER = 0xFFFF ^ MESSAGE_HEADER
+MESSAGE_FOOTER = 0xFFFF ^ MESSAGE_HEADER
 
 STATE_UPDATE = 0xD0
 FIELD_UPDATE = 0xD1
