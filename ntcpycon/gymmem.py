@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import dataclasses
 import logging
-import time
 import typing
 
 from collections import defaultdict
@@ -185,7 +184,7 @@ class GymMemory:
     _previous_state: dict = dataclasses.field(default_factory=dict)
 
     # derived:
-    time: int = dataclasses.field(default_factory=lambda: int(time.time() * 1000))
+    time: int = 0
     game_id: int = 0
     spawn_autorepeat_x: int = 0
 
@@ -196,7 +195,6 @@ class GymMemory:
     playstate: int = 0
 
     def _general_update_start(self):
-        self.time = int(time.time() * 1000)
         self._previous_state = {
             k: v for k, v in dataclasses.asdict(self).items() if not k.startswith("_")
         }
