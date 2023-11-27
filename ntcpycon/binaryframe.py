@@ -4,6 +4,7 @@ import typing
 
 if typing.TYPE_CHECKING:
     from .nestrisocr import NOCRPayload
+    from .gymmem import GymMemory
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -33,6 +34,65 @@ class BinaryFrame3:
         self.preview = 2**3-1
         self.cur_piece = 2**3-1
         self.cur_piece_das = 2**5-1
+    
+    @classmethod
+    def from_gym_memory(cls, gym: GymMemory) -> BinaryFrame3:
+        result = cls()
+        result.t = gym.stats_t
+        logger.debug(f"{result.t=}")
+
+        result.j = gym.stats_j
+        logger.debug(f"{result.j=}")
+
+        result.z = gym.stats_z
+        logger.debug(f"{result.z=}")
+
+        result.o = gym.stats_o
+        logger.debug(f"{result.o=}")
+
+        result.s = gym.stats_s
+        logger.debug(f"{result.s=}")
+
+        result.l = gym.stats_l
+        logger.debug(f"{result.l=}")
+
+        result.i = gym.stats_i
+        logger.debug(f"{result.i=}")
+
+        result.elapsed = gym.time
+        logger.debug(f"{result.elapsed=}")
+
+        result.game_id = gym.game_id
+        logger.debug(f"{result.game_id=}")
+
+        result.level = gym.level
+        logger.debug(f"{result.level=}")
+
+        result.lines = gym.lines
+        logger.debug(f"{result.lines=}")
+
+        result.score = gym.score
+        logger.debug(f"{result.score=}")
+
+        result.preview = gym.next_piece_id
+        logger.debug(f"{result.preview=}")
+
+        result.playfield = gym.compressed
+        logger.debug(f"{result.playfield=}")
+        
+        # das trainer stats
+        result.instant_das = gym.autorepeat_x
+        logger.debug(f"{result.instant_das=}")
+
+        result.cur_piece = gym.current_piece_id
+        logger.debug(f"{result.cur_piece=}")
+
+        result.cur_piece_das = gym.spawn_autorepeat_x
+        logger.debug(f"{result.cur_piece_das=}")
+        
+
+        return result
+    
 
     @classmethod
     def from_nestris_ocr(cls, ocr_payload: NOCRPayload) -> BinaryFrame3:
@@ -40,32 +100,46 @@ class BinaryFrame3:
         stats = ocr_payload.stats
         result.t = stats["T"]
         logger.debug(f"{result.t=}")
+
         result.j = stats["J"]
         logger.debug(f"{result.j=}")
+
         result.z = stats["Z"]
         logger.debug(f"{result.z=}")
+
         result.o = stats["O"]
         logger.debug(f"{result.o=}")
+
         result.s = stats["S"]
         logger.debug(f"{result.s=}")
+
         result.l = stats["L"]
         logger.debug(f"{result.l=}")
+
         result.i = stats["I"]
         logger.debug(f"{result.i=}")
+
         result.elapsed = ocr_payload.time
         logger.debug(f"{result.elapsed=}")
+
         result.game_id = ocr_payload.gameid
         logger.debug(f"{result.game_id=}")
+
         result.level = ocr_payload.level
         logger.debug(f"{result.level=}")
+
         result.lines = ocr_payload.lines
         logger.debug(f"{result.lines=}")
+
         result.score = ocr_payload.score
         logger.debug(f"{result.score=}")
+
         result.preview = ocr_payload.preview
         logger.debug(f"{result.preview=}")
+
         result.playfield = ocr_payload.field_bytes
         logger.debug(f"{result.playfield=}")
+
         return result
 
     @property

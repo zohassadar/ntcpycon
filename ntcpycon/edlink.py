@@ -2,13 +2,20 @@ from __future__ import annotations
 import asyncio
 import logging
 import sys
+import time
 
 import edlinkn8
 import ntcpycon.abstract
+import ntcpycon.gymmem
+import ntcpycon.binaryframe
 
 Receiver = ntcpycon.abstract.Receiver
+GymMemory = ntcpycon.gymmem.GymMemory
+BinaryFrame3 = ntcpycon.binaryframe.BinaryFrame3
 
 logger = logging.getLogger(__name__)
+
+IDLE_MAX = .25
 
 CMD_SEND_STATS = 0x42
 
@@ -45,7 +52,7 @@ class ED2NTCFrame:
         self.tetrimino_y = frame[17]
         # ; frameCounter 2 Used for line clearing animation
         self.frame_counter0 = frame[18]
-        self.frame_counter0 = frame[19]
+        self.frame_counter1 = frame[19]
         # ; autoRepeatX 1 current DAS
         self.autorepeat_x = frame[20]
         # ; statsByType 14
@@ -82,25 +89,38 @@ class EDLink(Receiver):
         return f"{type(self).__name__}({queues=}, {everdrive=})"
 
     async def receive(self):
-        last = 0
         loop = asyncio.get_running_loop()
+        _last_frame_counter = 0
+        _last_frame_sent = ()
+        _last_frame_sent_when = time.time()
+        gym = GymMemory()
+
         while True:
             await loop.run_in_executor(
                 None, self.everdrive.write_fifo, bytearray([0x42])
             )
-            msg = await loop.run_in_executor(None, self.everdrive.receive_data, 0xED)
-            logger.debug(f"Received {len(msg)} bytes from ed")
+            frame = await loop.run_in_executor(None, self.everdrive.receive_data, 0xED)
+            logger.debug(f"Received {len(frame)} bytes from ed")
 
             # frame drop/error detection
-            if len(msg) == 0xED:
-                fc = int.from_bytes(msg[18:20], "little")
-                if (lastn := ((last + 1) & 0xFFFF)) != fc:
+            if len(frame) == 0xED:
+                fc = int.from_bytes(frame[18:20], "little")
+                if (_last_fc_nrmlzed := ((_last_frame_counter + 1) & 0xFFFF)) != fc:
                     logger.warning(
-                        f'dropped {fc-lastn} frame{"s" if fc-lastn>1 else ""}.  {last+1} to {fc-1}'
+                        f'dropped {fc-_last_fc_nrmlzed} frame{"s" if fc-_last_fc_nrmlzed>1 else ""}.  {_last_frame_counter+1} to {fc-1}'
                     )
-                last = fc
+                _last_frame_counter = fc
             else:
-                logger.warning(f"Invalid frame length: {len(msg)}")
+                logger.warning(f"Invalid frame length: {len(frame)}")
 
+            edframe = ED2NTCFrame(frame)
+            gym.update_from_edlink(edframe)
+            bframe = BinaryFrame3.from_gym_memory(gym)
+
+            now = time.time()
+            if (bframe.compare_data == _last_frame_sent) and (now - _last_frame_sent_when < IDLE_MAX):
+                logger.debug(f"Skipping transmit of frame")
+            _last_frame_sent_when = now
+            _last_frame_sent = bframe.compare_data
             for queue in self.queues:
-                await queue.put(bytearray(73))
+                await queue.put(bframe.payload)
