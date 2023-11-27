@@ -123,5 +123,4 @@ class NOCRPayload:
             b3 = int(chunk[2]) << 2
             b4 = int(chunk[3])
             result[idx] = (b1 | b2 | b3 | b4)
-        logger.debug('Something something %d', len(result))
         return result
