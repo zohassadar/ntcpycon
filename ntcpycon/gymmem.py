@@ -175,11 +175,11 @@ class GymMemory:
     stats_i_hi: int = 0
 
     # holds playfield that gets presented
-    _playfield: bytearray = dataclasses.field(default_factory=lambda: bytearray(200))
+    _playfield: bytearray = dataclasses.field(default_factory=lambda:bytearray([BLANK_TILE] * 200))
 
     # holds playfield that is updated from frame
     _playfield_buffer: bytearray = dataclasses.field(
-        default_factory=lambda: bytearray(200)
+        default_factory=lambda: bytearray([BLANK_TILE] * 200)
     )
 
     _previous_state: dict = dataclasses.field(default_factory=dict)
