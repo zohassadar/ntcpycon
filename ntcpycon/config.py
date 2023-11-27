@@ -4,6 +4,7 @@ import sys
 import yaml
 
 import ntcpycon.abstract
+import ntcpycon.edlink
 import ntcpycon.file_handler
 import ntcpycon.pcap_replay
 import ntcpycon.tcp_server
@@ -15,6 +16,7 @@ TCPServer = ntcpycon.tcp_server.TCPServer
 PCapReplay = ntcpycon.pcap_replay.PCapReplay
 FileWriter = ntcpycon.file_handler.FileWriter
 FileReceiver = ntcpycon.file_handler.FileReceiver
+EDLink = ntcpycon.edlink.EDLink
 
 
 def get_senders(
@@ -51,6 +53,12 @@ def get_receiver(
         if not port:
             sys.exit("port must be specified to start tcp server")
         return TCPServer(queues, port)
+
+    elif (edlink := receiver.get("edlink", {})) or "edlink" in receiver.keys():
+        launch = False
+        if edlink:
+            launch = edlink.get("launch")
+        return EDLink(queues, launch=launch)
 
     elif local_file := receiver.get("local_file", {}):
         filename = local_file.get("filename")
