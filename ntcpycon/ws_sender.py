@@ -8,7 +8,7 @@ from websockets.client import connect
 import ntcpycon.abstract
 import ntcpycon.pcap_replay
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 INFO_CYCLE = 1500

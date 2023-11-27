@@ -11,7 +11,7 @@ NOCRPayload = ntcpycon.nestrisocr.NOCRPayload
 Receiver = ntcpycon.abstract.Receiver
 BinaryFrame3 = ntcpycon.binaryframe.BinaryFrame3
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 EXPECTED_MAX = 1000
