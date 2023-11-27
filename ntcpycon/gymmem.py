@@ -190,6 +190,7 @@ class GymMemory:
     spawn_autorepeat_x: int = 0
 
     def _general_update_start(self):
+        self.time = int(time.time() * 1000)
         self._previous_state = {
             k: v for k, v in dataclasses.asdict(self).items() if not k.startswith("_")
         }
