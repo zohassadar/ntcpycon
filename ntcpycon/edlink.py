@@ -21,6 +21,7 @@ CMD_SEND_STATS = 0x42
 
 class ED2NTCFrame:
     def __init__(self, frame: bytes):
+        self.start_time = time.time()
         # ; gameMode 1
         self.game_mode = frame[0]
         # ; playState 1
@@ -114,7 +115,10 @@ class EDLink(Receiver):
                 logger.warning(f"Invalid frame length: {len(frame)}")
 
             edframe = ED2NTCFrame(frame)
+            now = time.time()
             gym.update_from_edlink(edframe)
+            gym.time = int((now - self.start_time) / 1000)
+
             bframe = BinaryFrame3.from_gym_memory(gym)
 
             now = time.time()
