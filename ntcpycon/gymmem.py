@@ -138,8 +138,8 @@ ORIENTATION_TABLE = [
 @dataclasses.dataclass
 class GymMemory:
     # directly from memory
-    game_mode: int = 0
-    playstate: int = 0
+    game_start_game_mode: int = 0
+    game_mode_state_play_state: int = 0
     vram_row: int = 0  # for later
     row_y: int = 0
     next_piece: int = 0
@@ -189,6 +189,12 @@ class GymMemory:
     game_id: int = 0
     spawn_autorepeat_x: int = 0
 
+    # unpacked:
+    game_mode: int = 0
+    game_mode_state: int = 0
+    game_start: int = 0
+    playstate: int = 0
+
     def _general_update_start(self):
         self.time = int(time.time() * 1000)
         self._previous_state = {
@@ -226,8 +232,15 @@ class GymMemory:
     def update_from_edlink(self, edframe: ED2NTCFrame):
         self._general_update_start()
 
-        self.game_mode = edframe.game_mode
-        self.playstate = edframe.play_state
+        self.game_start_game_mode = edframe.game_start_game_state
+        self.game_mode_state_play_state = edframe.game_mode_state_play_state
+
+        #unpack:
+        self.game_start = self.game_start_game_mode >> 4
+        self.game_mode = self.game_start_game_mode & 0xF
+        self.game_mode_state = self.game_mode_state_play_state >> 4
+        self.playstate = self.game_mode_state_play_state & 0xF
+
         self.row_y = edframe.row_y
         self.next_piece = edframe.next_piece
         self.current_piece = edframe.current_piece

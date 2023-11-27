@@ -22,9 +22,9 @@ CMD_SEND_STATS = 0x42
 class ED2NTCFrame:
     def __init__(self, frame: bytes):
         # ; gameMode 1
-        self.game_mode = frame[0]
+        self.game_start_game_state = frame[0]
         # ; playState 1
-        self.play_state = frame[1]
+        self.game_mode_state_play_state = frame[1]
         # ; rowY 1
         self.row_y = frame[2]
         # ; completedRow 4
