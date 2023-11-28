@@ -15,9 +15,10 @@ BinaryFrame3 = ntcpycon.binaryframe.BinaryFrame3
 
 logger = logging.getLogger(__name__)
 
-IDLE_MAX = .25
+IDLE_MAX = 0.25
 
 CMD_SEND_STATS = 0x42
+
 
 class ED2NTCCompactFrame:
     def __init__(self, frame: bytes):
@@ -42,12 +43,12 @@ class ED2NTCCompactFrame:
         self.vram_row = 0
         self.padding = bytearray()
         self.stats = bytearray(14)
-        self.playfield_chunk = bytearray([0xef] * 40)
+        self.playfield_chunk = bytearray([0xEF] * 40)
 
         # header 2
         self.header = frame[0:2]
 
-        # frameCounter 2 
+        # frameCounter 2
         self.frame_counter0 = frame[2]
         self.frame_counter1 = frame[3]
 
@@ -56,7 +57,7 @@ class ED2NTCCompactFrame:
 
         # playState 1
         self.playstate = frame[5]
-        
+
         # gameStart 1
         self.game_start = frame[6]
 
@@ -106,14 +107,14 @@ class ED2NTCCompactFrame:
             self.vram_row = frame[9]
             self.playfield_chunk[:] = frame[10:50]
             self.padding = frame[50:62]
-        
+
         self.footer = frame[62:64]
 
         header = int.from_bytes(self.header, "little")
         footer = int.from_bytes(self.footer, "little")
-        self.invalid=False
-        if header^footer!=0xFFFF:
-            logger.warning(f'{header:04x} ^ {footer:04x} != 0xFFFF')
+        self.invalid = False
+        if header ^ footer != 0xFFFF:
+            logger.warning(f"{header:04x} ^ {footer:04x} != 0xFFFF")
             self.invalid = True
 
 
@@ -162,21 +163,25 @@ class ED2NTCFrame:
         # ; footer : 2 * $AA
         self.footer = frame[235:]
 
+
 class CompactOptions:
     REQUEST = 0x43
     SIZE = 0x40
-    FC_LOC = slice(2,4)
+    FC_LOC = slice(2, 4)
     FRAME = ED2NTCCompactFrame
     UPDATE = "update_from_edlink_compact"
+
 
 class Options:
     REQUEST = 0x42
     SIZE = 0xED
-    FC_LOC = slice(18,20)
+    FC_LOC = slice(18, 20)
     FRAME = ED2NTCFrame
     UPDATE = "update_from_edlink"
 
+
 options = CompactOptions
+
 
 class EDLink(Receiver):
     def __init__(
@@ -212,7 +217,9 @@ class EDLink(Receiver):
             await loop.run_in_executor(
                 None, self.everdrive.write_fifo, bytearray([options.REQUEST])
             )
-            frame = await loop.run_in_executor(None, self.everdrive.receive_data, options.SIZE)
+            frame = await loop.run_in_executor(
+                None, self.everdrive.receive_data, options.SIZE
+            )
             logger.debug(f"Received {len(frame)} bytes from ed")
 
             # frame drop/error detection
@@ -231,7 +238,9 @@ class EDLink(Receiver):
             bframe = BinaryFrame3.from_gym_memory(gym)
 
             now = time.time()
-            if (bframe.compare_data == _last_frame_sent) and (now - _last_frame_sent_when < IDLE_MAX):
+            if (bframe.compare_data == _last_frame_sent) and (
+                now - _last_frame_sent_when < IDLE_MAX
+            ):
                 logger.debug(f"Skipping transmit of frame")
                 continue
             _last_frame_sent_when = now

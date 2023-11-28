@@ -25,26 +25,31 @@ class NOCRPayload:
         except Exception as e:
             logger.error(f"Exception trying to decode: {type(e)}: {e!s}")
             logger.error(f"{payload!s}")
-        self._gameid: str | None  = self.payload.get("gameid")
+        self._gameid: str | None = self.payload.get("gameid")
 
-        self.gameid: int = int(self._gameid) & (2**16-1) if self._gameid is not None else 2**16-1
+        self.gameid: int = (
+            int(self._gameid) & (2**16 - 1)
+            if self._gameid is not None
+            else 2**16 - 1
+        )
 
-        self._preview: str | None  = self.payload.get("preview")
-        self.preview: int = 2**3-1 if self._preview is None else PIECE_TO_VALUE[self._preview]
-
+        self._preview: str | None = self.payload.get("preview")
+        self.preview: int = (
+            2**3 - 1 if self._preview is None else PIECE_TO_VALUE[self._preview]
+        )
 
         self._lines: str | None = self.payload.get("lines")
         self._level: str | None = self.payload.get("level")
         self._score: str | None = self.payload.get("score")
         self._field: str | None = self.payload.get("field")
         self._time: float | None = self.payload.get("time")
-        self._T: str | None  = self.payload.get("T")
-        self._J: str | None  = self.payload.get("J")
-        self._Z: str | None  = self.payload.get("Z")
-        self._O: str | None  = self.payload.get("O")
-        self._S: str | None  = self.payload.get("S")
-        self._L: str | None  = self.payload.get("L")
-        self._I: str | None  = self.payload.get("I")
+        self._T: str | None = self.payload.get("T")
+        self._J: str | None = self.payload.get("J")
+        self._Z: str | None = self.payload.get("Z")
+        self._O: str | None = self.payload.get("O")
+        self._S: str | None = self.payload.get("S")
+        self._L: str | None = self.payload.get("L")
+        self._I: str | None = self.payload.get("I")
 
     @property
     def time(self) -> int:
@@ -52,7 +57,7 @@ class NOCRPayload:
         result = max
         if self._time is not None:
             result = (int(self._time * 1000)) & max
-        elif self.time is not None: # lol what?
+        elif self.time is not None:  # lol what?
             logger.debug(f"Unexpected Time Value: {self.time=}")
         return result
 
@@ -111,16 +116,18 @@ class NOCRPayload:
     @property
     def field_bytes(self) -> bytearray:
         # "3021" -> 0b11_00_10_01
-        result =  bytearray(50)
+        result = bytearray(50)
         if not isinstance(self._field, str):
             return result
         if not len(self._field) == 200:
             print("error.   not 200 bytes")
             return result
-        for idx, chunk in enumerate(self._field[i : i + 4] for i in range(0, len(self._field), 4)):
+        for idx, chunk in enumerate(
+            self._field[i : i + 4] for i in range(0, len(self._field), 4)
+        ):
             b1 = int(chunk[0]) << 6
             b2 = int(chunk[1]) << 4
             b3 = int(chunk[2]) << 2
             b4 = int(chunk[3])
-            result[idx] = (b1 | b2 | b3 | b4)
+            result[idx] = b1 | b2 | b3 | b4
         return result

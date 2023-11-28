@@ -13,6 +13,7 @@ logger.addHandler(logging.NullHandler())
 
 INFO_CYCLE = 50000
 
+
 class WSSender(ntcpycon.abstract.Sender):
     def __init__(self, uri: str, no_verify=False):
         self.uri = uri
@@ -22,7 +23,7 @@ class WSSender(ntcpycon.abstract.Sender):
             {"ssl": ssl._create_unverified_context()} if no_verify else {}
         )
         self.stopped = False
-        self.masked_uri = '/'.join(self.uri.split('/')[:-1]) + "/<hidden>"
+        self.masked_uri = "/".join(self.uri.split("/")[:-1]) + "/<hidden>"
 
     def __repr__(self):
         uri = self.masked_uri
@@ -38,7 +39,9 @@ class WSSender(ntcpycon.abstract.Sender):
         frame_count = 0
         while True:
             if not next(ticker):
-                logger.info(f"Web Socket to {self.masked_uri} open.  Frame Send Count: {frame_count}")
+                logger.info(
+                    f"Web Socket to {self.masked_uri} open.  Frame Send Count: {frame_count}"
+                )
             if self.stopped:
                 logger.debug("Stopping")
                 break
@@ -57,7 +60,7 @@ class WSSender(ntcpycon.abstract.Sender):
         logger.info("while loop broken")
 
     async def send(self):
-        websocket = await connect(self.uri, **self.connect_kwargs) # type: ignore
+        websocket = await connect(self.uri, **self.connect_kwargs)  # type: ignore
         await asyncio.gather(
             self.read_handler(websocket),
             self.write_handler(websocket),

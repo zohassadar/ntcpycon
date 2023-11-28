@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-
 class BinaryFrame3:
     VERSION = 3
     GAME_TYPE = 1
@@ -18,23 +17,23 @@ class BinaryFrame3:
     def __init__(self):
         self.playfield = bytearray(50)
         # todo: not all of these are nullable
-        self.t = 2**10-1
-        self.j = 2**10-1
-        self.z = 2**10-1
-        self.o = 2**10-1
-        self.s = 2**10-1
-        self.l = 2**10-1
-        self.i = 2**10-1
-        self.game_id = 2**16-1
-        self.elapsed = 2**28-1
-        self.lines = 2**12-1
-        self.level = 2**8-1
-        self.score = 2**24-1
-        self.instant_das = 2**5-1
-        self.preview = 2**3-1
-        self.cur_piece = 2**3-1
-        self.cur_piece_das = 2**5-1
-    
+        self.t = 2**10 - 1
+        self.j = 2**10 - 1
+        self.z = 2**10 - 1
+        self.o = 2**10 - 1
+        self.s = 2**10 - 1
+        self.l = 2**10 - 1
+        self.i = 2**10 - 1
+        self.game_id = 2**16 - 1
+        self.elapsed = 2**28 - 1
+        self.lines = 2**12 - 1
+        self.level = 2**8 - 1
+        self.score = 2**24 - 1
+        self.instant_das = 2**5 - 1
+        self.preview = 2**3 - 1
+        self.cur_piece = 2**3 - 1
+        self.cur_piece_das = 2**5 - 1
+
     @classmethod
     def from_gym_memory(cls, gym: GymMemory) -> BinaryFrame3:
         result = cls()
@@ -79,7 +78,7 @@ class BinaryFrame3:
 
         result.playfield = gym.compressed
         logger.debug(f"{result.playfield=}")
-        
+
         # das trainer stats
         result.instant_das = gym.autorepeat_x
         logger.debug(f"{result.instant_das=}")
@@ -89,14 +88,12 @@ class BinaryFrame3:
 
         result.cur_piece_das = gym.spawn_autorepeat_x
         logger.debug(f"{result.cur_piece_das=}")
-        
 
         return result
-    
 
     @classmethod
     def from_nestris_ocr(cls, ocr_payload: NOCRPayload) -> BinaryFrame3:
-        result =  cls()
+        result = cls()
         stats = ocr_payload.stats
         result.t = stats["T"]
         logger.debug(f"{result.t=}")
@@ -177,14 +174,11 @@ class BinaryFrame3:
         result.extend(self.playfield)
         return tuple(result)
 
-
     @property
     def payload(self):
         _payload = bytearray(73)
         logger.debug(len(_payload))
-        _payload[0] = ((self.VERSION & 0b111) << 5) | (
-            (self.GAME_TYPE & 0b11) << 3
-        )
+        _payload[0] = ((self.VERSION & 0b111) << 5) | ((self.GAME_TYPE & 0b11) << 3)
 
         _payload[1] = (self.game_id & 0xFF00) >> 8
         _payload[2] = (self.game_id & 0x00FF) >> 0
@@ -210,5 +204,3 @@ class BinaryFrame3:
         _payload[14:23] = self.stats
         _payload[23:] = self.playfield
         return bytes(_payload)
-
-

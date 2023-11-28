@@ -312,7 +312,6 @@ class GymMemory:
                     break
                 self._playfield_buffer[offset] = edframe.playfield_chunk[i]
         else:
-
             self.row_y = edframe.row_y
             self.next_piece = edframe.next_piece
             self.current_piece = edframe.current_piece

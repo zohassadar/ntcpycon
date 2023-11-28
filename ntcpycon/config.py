@@ -47,7 +47,6 @@ def get_receiver(
     queues: list,
     receiver: dict,
 ):
-
     if tcp_server := receiver.get("tcp_server", {}):
         port = tcp_server.get("port")
         if not port:

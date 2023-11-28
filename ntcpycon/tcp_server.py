@@ -18,7 +18,7 @@ EXPECTED_MAX = 1000
 
 INFO_CYCLE = 1500
 
-IDLE_MAX = .25
+IDLE_MAX = 0.25
 
 
 class TCPServer(Receiver):
@@ -48,7 +48,6 @@ class TCPServer(Receiver):
         client_reader: asyncio.StreamReader,
         client_writer: asyncio.StreamWriter,
     ):
-
         await asyncio.gather(
             self.write_handler(client_writer),
             self.read_handler(client_reader),
@@ -90,8 +89,8 @@ class TCPServer(Receiver):
                         bytes_flushed = len(flushed)
                         if bytes_flushed < EXPECTED_MAX:
                             break
-                        logger.debug(f'Flushed {bytes_flushed} bytes')
-                    logger.debug('Carrying on')
+                        logger.debug(f"Flushed {bytes_flushed} bytes")
+                    logger.debug("Carrying on")
                     continue
                 payload = await client_reader.read(payload_length)
                 logger.debug(f"Received {len(payload)} bytes")
@@ -99,7 +98,9 @@ class TCPServer(Receiver):
                 nocrpayload = NOCRPayload(payload)
                 bframe = BinaryFrame3.from_nestris_ocr(nocrpayload)
                 now = time.time()
-                if (bframe.compare_data == _last_frame_sent) and (now - _last_frame_sent_when < IDLE_MAX):
+                if (bframe.compare_data == _last_frame_sent) and (
+                    now - _last_frame_sent_when < IDLE_MAX
+                ):
                     logger.debug(f"Skipping transmit of frame")
                     continue
                 frame_count += 1
