@@ -19,6 +19,96 @@ IDLE_MAX = .25
 
 CMD_SEND_STATS = 0x42
 
+class ED2NTCCompactFrame:
+    def __init__(self, frame: bytes):
+        self.game_start_game_state = 0
+        self.row_y = 0
+        self.completed_row0 = 0
+        self.completed_row1 = 0
+        self.completed_row2 = 0
+        self.completed_row3 = 0
+        self.lines0 = 0
+        self.lines1 = 0
+        self.level = 0
+        self.score0 = 0
+        self.score1 = 0
+        self.score2 = 0
+        self.score3 = 0
+        self.next_piece = 0
+        self.current_piece = 0
+        self.tetrimino_x = 0
+        self.tetrimino_y = 0
+        self.autorepeat_x = 0
+        self.vram_row = 0
+        self.padding = bytearray()
+        self.stats = bytearray(14)
+        self.playfield_chunk = bytearray([0xef] * 40)
+
+        # header 2
+        self.header = frame[0:2]
+
+        # frameCounter 2 
+        self.frame_counter0 = frame[2]
+        self.frame_counter1 = frame[3]
+
+        # gameModeState playState 1
+        self.game_mode_state_play_state = frame[4]
+
+        self.game_start_game_state = frame[5]
+        # frame type 1
+        self.frame_type = frame[6]
+
+        if not self.frame_type:
+            # ; gameMode 1
+
+            # ; rowY 1
+            self.row_y = frame[7]
+            # ; completedRow 4
+            self.completed_row0 = frame[8]
+            self.completed_row1 = frame[9]
+            self.completed_row2 = frame[10]
+            self.completed_row3 = frame[11]
+            # ; lines 2 (bcd)
+            self.lines0 = frame[12]
+            self.lines1 = frame[13]
+            # ; levelNumber 1
+            self.level = frame[14]
+            # ; binScore 4
+            self.score0 = frame[15]
+            self.score1 = frame[16]
+            self.score2 = frame[17]
+            self.score3 = frame[18]
+            # ; nextPiece 1
+            self.next_piece = frame[19]
+            # ; currentPiece 1
+            self.current_piece = frame[20]
+            # ; tetriminoX 1 Needed to determine where piece is in playfield
+            self.tetrimino_x = frame[21]
+            # ; tetriminoY 1 same
+            self.tetrimino_y = frame[22]
+
+            # ; autoRepeatX 1 current DAS
+            self.autorepeat_x = frame[23]
+            # ; statsByType 14
+            self.stats[:] = frame[24:38]
+
+            # padding 24
+            self.padding = frame[38:62]
+        else:
+            self.vram_row = frame[7]
+            self.playfield_chunk[:] = frame[8:48]
+            self.padding = frame[48:62]
+        
+        self.footer = frame[62:64]
+
+        header = int.from_bytes(self.header, "little")
+        footer = int.from_bytes(self.footer, "little")
+        self.invalid=False
+        if header^footer!=0xFFFF:
+            logger.warning(f'{header:04x} ^ {footer:04x} != 0xFFFF')
+            self.invalid = True
+
+
 class ED2NTCFrame:
     def __init__(self, frame: bytes):
         # ; gameMode 1
@@ -64,6 +154,21 @@ class ED2NTCFrame:
         # ; footer : 2 * $AA
         self.footer = frame[235:]
 
+class CompactOptions:
+    REQUEST = 0x43
+    SIZE = 0x40
+    FC_LOC = slice(2,4)
+    FRAME = ED2NTCCompactFrame
+    UPDATE = "update_from_edlink_compact"
+
+class Options:
+    REQUEST = 0x42
+    SIZE = 0xED
+    FC_LOC = slice(18,20)
+    FRAME = ED2NTCFrame
+    UPDATE = "update_from_edlink"
+
+options = CompactOptions
 
 class EDLink(Receiver):
     def __init__(
@@ -97,14 +202,14 @@ class EDLink(Receiver):
 
         while True:
             await loop.run_in_executor(
-                None, self.everdrive.write_fifo, bytearray([0x42])
+                None, self.everdrive.write_fifo, bytearray([options.REQUEST])
             )
-            frame = await loop.run_in_executor(None, self.everdrive.receive_data, 0xED)
+            frame = await loop.run_in_executor(None, self.everdrive.receive_data, options.SIZE)
             logger.debug(f"Received {len(frame)} bytes from ed")
 
             # frame drop/error detection
-            if len(frame) == 0xED:
-                fc = int.from_bytes(frame[18:20], "little")
+            if len(frame) == options.SIZE:
+                fc = int.from_bytes(frame[options.FC_LOC], "little")
                 if (_last_fc_nrmlzed := ((_last_frame_counter + 1) & 0xFFFF)) != fc:
                     logger.warning(
                         f'dropped {fc-_last_fc_nrmlzed} frame{"s" if fc-_last_fc_nrmlzed>1 else ""}.  {_last_frame_counter+1} to {fc-1}'
@@ -113,8 +218,8 @@ class EDLink(Receiver):
             else:
                 logger.warning(f"Invalid frame length: {len(frame)}")
 
-            edframe = ED2NTCFrame(frame)
-            gym.update_from_edlink(edframe)
+            edframe = options.FRAME(frame)
+            getattr(gym, options.UPDATE)(edframe)
             bframe = BinaryFrame3.from_gym_memory(gym)
 
             now = time.time()

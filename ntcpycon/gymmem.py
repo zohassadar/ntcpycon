@@ -8,7 +8,10 @@ import typing
 from collections import defaultdict
 
 if typing.TYPE_CHECKING:
-    from .edlink import ED2NTCFrame
+    from .edlink import (
+        ED2NTCFrame,
+        ED2NTCCompactFrame,
+    )
 
 
 logger = logging.getLogger(__name__)
@@ -138,8 +141,6 @@ ORIENTATION_TABLE = [
 @dataclasses.dataclass
 class GymMemory:
     # directly from memory
-    game_start_game_mode: int = 0
-    game_mode_state_play_state: int = 0
     vram_row: int = 0  # for later
     row_y: int = 0
     next_piece: int = 0
@@ -149,6 +150,7 @@ class GymMemory:
     autorepeat_x: int = 0
     frame_counter_lo: int = 0
     frame_counter_hi: int = 0
+    level: int = 0
     lines_lo: int = 0
     lines_hi: int = 0
     score0: int = 0
@@ -175,7 +177,9 @@ class GymMemory:
     stats_i_hi: int = 0
 
     # holds playfield that gets presented
-    _playfield: bytearray = dataclasses.field(default_factory=lambda:bytearray([BLANK_TILE] * 200))
+    _playfield: bytearray = dataclasses.field(
+        default_factory=lambda: bytearray([BLANK_TILE] * 200)
+    )
 
     # holds playfield that is updated from frame
     _playfield_buffer: bytearray = dataclasses.field(
@@ -202,12 +206,21 @@ class GymMemory:
             k: v for k, v in dataclasses.asdict(self).items() if not k.startswith("_")
         }
 
-    def _general_update_finish(self):
-
+    def _general_update_finish_compact(self):
         if self.playstate == 8:
             self.spawn_autorepeat_x = self.autorepeat_x
-        
-        if self.game_start != self._previous_state['game_start']:
+
+        if self.game_start != self._previous_state["game_start"]:
+            self.game_id += 1
+
+        self.overlay_lineclear_compact()
+        self._playfield[:] = self._playfield_buffer
+        self.overlay_piece()
+
+    def _general_update_finish(self):
+        if self.playstate == 8:
+            self.spawn_autorepeat_x = self.autorepeat_x
+        if self.game_start != self._previous_state["game_start"]:
             self.game_id += 1
 
         # update field according to playstate
@@ -227,14 +240,14 @@ class GymMemory:
     def update_from_edlink(self, edframe: ED2NTCFrame):
         self._general_update_start()
 
-        self.game_start_game_mode = edframe.game_start_game_state
-        self.game_mode_state_play_state = edframe.game_mode_state_play_state
+        game_start_game_mode = edframe.game_start_game_state
+        game_mode_state_play_state = edframe.game_mode_state_play_state
 
-        #unpack:
-        self.game_start = self.game_start_game_mode >> 4
-        self.game_mode = self.game_start_game_mode & 0xF
-        self.game_mode_state = self.game_mode_state_play_state >> 4
-        self.playstate = self.game_mode_state_play_state & 0xF
+        # unpack:
+        self.game_start = game_start_game_mode >> 4
+        self.game_mode = game_start_game_mode & 0xF
+        self.game_mode_state = game_mode_state_play_state >> 4
+        self.playstate = game_mode_state_play_state & 0xF
 
         self.row_y = edframe.row_y
         self.next_piece = edframe.next_piece
@@ -279,6 +292,68 @@ class GymMemory:
         self._playfield_buffer[:] = edframe.playfield
 
         self._general_update_finish()
+
+    def update_from_edlink_compact(self, edframe: ED2NTCCompactFrame):
+        self._general_update_start()
+
+        game_mode_state_play_state = edframe.game_mode_state_play_state
+        game_start_game_mode = edframe.game_start_game_state
+
+        # unpack:
+        self.game_mode_state = game_mode_state_play_state >> 4
+        self.playstate = game_mode_state_play_state & 0xF
+        self.game_start = game_start_game_mode >> 4
+        self.game_mode = game_start_game_mode & 0xF
+
+        self.frame_counter_hi = edframe.frame_counter1
+        self.frame_counter_lo = edframe.frame_counter0
+
+        if edframe.frame_type:
+            for i, offset in enumerate(
+                range(edframe.vram_row * 10, edframe.vram_row * 10 + 40)
+            ):
+                if offset >= 200:
+                    break
+                self._playfield_buffer[offset] = edframe.playfield_chunk[i]
+        else:
+
+            self.row_y = edframe.row_y
+            self.next_piece = edframe.next_piece
+            self.current_piece = edframe.current_piece
+            self.tetrimino_x = edframe.tetrimino_x
+            self.tetrimino_y = edframe.tetrimino_y
+            self.autorepeat_x = edframe.autorepeat_x
+
+            self.lines_hi = edframe.lines1
+            self.lines_lo = edframe.lines0
+
+            self.level = edframe.level
+
+            self.score0 = edframe.score0
+            self.score1 = edframe.score1
+            self.score2 = edframe.score2
+            self.score3 = edframe.score3
+
+            self.completed_row0 = edframe.completed_row0
+            self.completed_row1 = edframe.completed_row1
+            self.completed_row2 = edframe.completed_row2
+            self.completed_row3 = edframe.completed_row3
+
+            self.stats_t_lo = edframe.stats[0]
+            self.stats_t_hi = edframe.stats[1]
+            self.stats_j_lo = edframe.stats[2]
+            self.stats_j_hi = edframe.stats[3]
+            self.stats_z_lo = edframe.stats[4]
+            self.stats_z_hi = edframe.stats[5]
+            self.stats_o_lo = edframe.stats[6]
+            self.stats_o_hi = edframe.stats[7]
+            self.stats_s_lo = edframe.stats[8]
+            self.stats_s_hi = edframe.stats[9]
+            self.stats_l_lo = edframe.stats[10]
+            self.stats_l_hi = edframe.stats[11]
+            self.stats_i_lo = edframe.stats[12]
+            self.stats_i_hi = edframe.stats[13]
+        self._general_update_finish_compact()
 
     @staticmethod
     def _hybrid_bcd_convert(hi: int, lo: int) -> int:
@@ -345,9 +420,7 @@ class GymMemory:
 
     def overlay_piece(self):
         if self.current_piece > 0x12:
-            logger.debug(
-                f"Ignoring invisible orientation ID 0x13"
-            )
+            logger.debug(f"Ignoring invisible orientation ID 0x13")
             return
         for x_offset, y_offset in ORIENTATION_TABLE[self.current_piece]:
             index = (self.tetrimino_y + y_offset) * 10 + self.tetrimino_x + x_offset
@@ -355,6 +428,28 @@ class GymMemory:
                 self._playfield[index] = PIECE_ORIENTATION_TO_TILE_ID[
                     self.current_piece
                 ]
+
+    def overlay_lineclear_compact(self):
+        ranges_by_row_y = {
+            0: (range(4, 5), range(5, 6)),
+            1: (range(3, 5), range(5, 7)),
+            2: (range(2, 5), range(5, 8)),
+            3: (range(1, 5), range(5, 9)),
+            4: (range(0, 5), range(5, 10)),
+        }
+        if self.playstate != 4:
+            return
+
+        if self.row_y > 4:
+            return
+
+        for row in self.completed_rows:
+            if not row:
+                continue
+            offset = row * 10
+            for blank_range in ranges_by_row_y[self.row_y]:
+                for blank in blank_range:
+                    self._playfield_buffer[offset + blank] = BLANK_TILE
 
     def overlay_lineclear(self):
         ranges_by_row_y = {
