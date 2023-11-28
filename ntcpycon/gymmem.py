@@ -144,7 +144,7 @@ class GymMemory:
     vram_row: int = 0  # for later
     row_y: int = 0
     next_piece: int = 0
-    current_piece: int = 0
+    current_piece: int = 0x13
     tetrimino_x: int = 0
     tetrimino_y: int = 0
     autorepeat_x: int = 0
