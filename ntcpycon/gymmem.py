@@ -211,11 +211,7 @@ class GymMemory:
             self.game_id += 1
 
         # update field according to playstate
-        if self.playstate in (1, 8):
-            self._playfield[:] = self._playfield_buffer
-            self.overlay_piece()
-
-        elif self.playstate in (2, 5, 6, 7):
+        if self.playstate in (1, 2, 5, 6, 7, 8):
             self._playfield[:] = self._playfield_buffer
             self.overlay_piece()
 
@@ -349,8 +345,8 @@ class GymMemory:
 
     def overlay_piece(self):
         if self.current_piece > 0x12:
-            logger.error(
-                f"overlay_piece called with invalid current_piece id: {self.current_piece}"
+            logger.debug(
+                f"Ignoring invisible orientation ID 0x13"
             )
             return
         for x_offset, y_offset in ORIENTATION_TABLE[self.current_piece]:
