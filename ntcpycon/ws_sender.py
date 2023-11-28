@@ -11,7 +11,7 @@ import ntcpycon.pcap_replay
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-INFO_CYCLE = 1500
+INFO_CYCLE = 50000
 
 class WSSender(ntcpycon.abstract.Sender):
     def __init__(self, uri: str, no_verify=False):
