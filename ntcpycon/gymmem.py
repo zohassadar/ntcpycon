@@ -296,14 +296,10 @@ class GymMemory:
     def update_from_edlink_compact(self, edframe: ED2NTCCompactFrame):
         self._general_update_start()
 
-        game_mode_state_play_state = edframe.game_mode_state_play_state
-        game_start_game_mode = edframe.game_start_game_state
-
-        # unpack:
-        self.game_mode_state = game_mode_state_play_state >> 4
-        self.playstate = game_mode_state_play_state & 0xF
-        self.game_start = game_start_game_mode >> 4
-        self.game_mode = game_start_game_mode & 0xF
+        self.game_mode_state = edframe.game_mode_state
+        self.playstate = edframe.playstate
+        self.game_start = edframe.game_start
+        self.game_state = edframe.game_state
 
         self.frame_counter_hi = edframe.frame_counter1
         self.frame_counter_lo = edframe.frame_counter0

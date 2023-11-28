@@ -51,53 +51,61 @@ class ED2NTCCompactFrame:
         self.frame_counter0 = frame[2]
         self.frame_counter1 = frame[3]
 
-        # gameModeState playState 1
-        self.game_mode_state_play_state = frame[4]
+        # gameModeState 1
+        self.game_mode_state = frame[4]
 
-        self.game_start_game_state = frame[5]
+        # playState 1
+        self.playstate = frame[5]
+        
+        # gameStart 1
+        self.game_start = frame[6]
+
+        # gameState
+        self.game_state = frame[7]
+
         # frame type 1
-        self.frame_type = frame[6]
+        self.frame_type = frame[8]
 
         if not self.frame_type:
             # ; gameMode 1
 
             # ; rowY 1
-            self.row_y = frame[7]
+            self.row_y = frame[9]
             # ; completedRow 4
-            self.completed_row0 = frame[8]
-            self.completed_row1 = frame[9]
-            self.completed_row2 = frame[10]
-            self.completed_row3 = frame[11]
+            self.completed_row0 = frame[10]
+            self.completed_row1 = frame[11]
+            self.completed_row2 = frame[12]
+            self.completed_row3 = frame[13]
             # ; lines 2 (bcd)
-            self.lines0 = frame[12]
-            self.lines1 = frame[13]
+            self.lines0 = frame[14]
+            self.lines1 = frame[15]
             # ; levelNumber 1
-            self.level = frame[14]
+            self.level = frame[16]
             # ; binScore 4
-            self.score0 = frame[15]
-            self.score1 = frame[16]
-            self.score2 = frame[17]
-            self.score3 = frame[18]
+            self.score0 = frame[17]
+            self.score1 = frame[18]
+            self.score2 = frame[19]
+            self.score3 = frame[20]
             # ; nextPiece 1
-            self.next_piece = frame[19]
+            self.next_piece = frame[21]
             # ; currentPiece 1
-            self.current_piece = frame[20]
+            self.current_piece = frame[22]
             # ; tetriminoX 1 Needed to determine where piece is in playfield
-            self.tetrimino_x = frame[21]
+            self.tetrimino_x = frame[23]
             # ; tetriminoY 1 same
-            self.tetrimino_y = frame[22]
+            self.tetrimino_y = frame[24]
 
             # ; autoRepeatX 1 current DAS
-            self.autorepeat_x = frame[23]
+            self.autorepeat_x = frame[25]
             # ; statsByType 14
-            self.stats[:] = frame[24:38]
+            self.stats[:] = frame[26:40]
 
-            # padding 24
-            self.padding = frame[38:62]
+            # padding 22
+            self.padding = frame[40:62]
         else:
-            self.vram_row = frame[7]
-            self.playfield_chunk[:] = frame[8:48]
-            self.padding = frame[48:62]
+            self.vram_row = frame[9]
+            self.playfield_chunk[:] = frame[10:50]
+            self.padding = frame[50:62]
         
         self.footer = frame[62:64]
 
