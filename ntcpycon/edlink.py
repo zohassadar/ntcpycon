@@ -233,6 +233,7 @@ class EDLink(Receiver):
             now = time.time()
             if (bframe.compare_data == _last_frame_sent) and (now - _last_frame_sent_when < IDLE_MAX):
                 logger.debug(f"Skipping transmit of frame")
+                continue
             _last_frame_sent_when = now
             _last_frame_sent = bframe.compare_data
             for queue in self.queues:
