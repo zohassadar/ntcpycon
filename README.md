@@ -37,7 +37,7 @@ If you have an account on [NESTrisChamps](https://nestrischamps.io) get your sec
 
 ```
 receiver:
-  tcp_server:
+  ocr_server:
     port: 3338
 
 senders:

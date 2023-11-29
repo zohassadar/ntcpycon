@@ -8,9 +8,9 @@ debug: false
 
 # Specify a single receiver
 receiver:
-  # Run a TCP server.
+  # Run a TCP server for NESTrisOCR.
   # Expects to receive frames from https://github.com/alex-ong/NESTrisOCR
-  tcp_server:
+  ocr_server:
     port: 3338
 
   # Replay a file containing saved frames

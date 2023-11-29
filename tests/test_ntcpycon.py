@@ -7,7 +7,6 @@ import ntcpycon.config
 import ntcpycon.connect
 import ntcpycon.file_handler
 import ntcpycon.pcap_replay
-import ntcpycon.tcp_server
 import ntcpycon.ws_sender
 
 

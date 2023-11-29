@@ -7,12 +7,12 @@ import ntcpycon.abstract
 import ntcpycon.edlink
 import ntcpycon.file_handler
 import ntcpycon.pcap_replay
-import ntcpycon.tcp_server
+import ntcpycon.nestrisocr
 import ntcpycon.ws_sender
 
 
 WSSender = ntcpycon.ws_sender.WSSender
-TCPServer = ntcpycon.tcp_server.TCPServer
+NESTrisOCRServer = ntcpycon.nestrisocr.NESTrisOCRServer
 PCapReplay = ntcpycon.pcap_replay.PCapReplay
 FileWriter = ntcpycon.file_handler.FileWriter
 FileReceiver = ntcpycon.file_handler.FileReceiver
@@ -47,11 +47,11 @@ def get_receiver(
     queues: list,
     receiver: dict,
 ):
-    if tcp_server := receiver.get("tcp_server", {}):
-        port = tcp_server.get("port")
+    if ocr_server := receiver.get("ocr_server", {}):
+        port = ocr_server.get("port")
         if not port:
             sys.exit("port must be specified to start tcp server")
-        return TCPServer(queues, port)
+        return NESTrisOCRServer(queues, port)
 
     elif (edlink := receiver.get("edlink", {})) or "edlink" in receiver.keys():
         launch = False
