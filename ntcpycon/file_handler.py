@@ -1,7 +1,7 @@
 import asyncio
+import gzip
 import itertools
 import logging
-
 import sys
 import ntcpycon.abstract
 
@@ -12,6 +12,12 @@ logger.addHandler(logging.NullHandler())
 
 Receiver = ntcpycon.abstract.Receiver
 Sender = ntcpycon.abstract.Sender
+
+FRAME_SIZE_BY_VERSION = {
+    1: 71,
+    2: 72,
+    3: 73,
+}
 
 
 class FileReceiver(Receiver):
@@ -33,22 +39,24 @@ class FileReceiver(Receiver):
         return f"{type(self).__name__}({queues=}, {filename=})"
 
     async def receive(self):
-        with open(
+        with gzip.GzipFile(
             self.filename,
             "rb",
-        ) as file:
+        ) as gzfile:
             logger.info(f"Opening {self.filename}")
             while True:
-                length = int.from_bytes(
-                    file.read(2),
-                    byteorder="big",
-                )
-                if not length:
+                first = gzfile.read(1)
+                if not first:
                     logger.info("End of file reached")
                     break
-                payload = file.read(length)
+                version = int.from_bytes(first, "big") >> 5
+                if version not in FRAME_SIZE_BY_VERSION.keys():
+                    raise Exception (f"Invalid version in byte: {version} from {first.hex()}")
+                length = FRAME_SIZE_BY_VERSION[version]
+                payload = bytearray(first)
+                payload.extend(gzfile.read(length-1))
                 for queue in self.queues:
-                    await queue.put(payload)
+                    await queue.put(bytes(payload))
 
 
 class FileWriter(Sender):
@@ -86,8 +94,8 @@ class FileWriter(Sender):
         if not length:
             logger.warning("Unable to write empty buffer")
             return
-        with open(self.filename, "ab") as file:
-            file.write(self.buffer)
+        with gzip.GzipFile(self.filename, "ab") as gzfile:
+            gzfile.write(self.buffer)
         logger.info(f"Successfully wrote {length} bytes to {self.filename}")
         self.buffer = b""
 
@@ -99,9 +107,7 @@ class FileWriter(Sender):
                 if not msg:
                     logger.info(f"Empty message received.  Breaking")
                     break
-                length = len(msg)
-                lengthb = length.to_bytes(2, byteorder="big")
-                self.buffer += lengthb + msg
+                self.buffer += msg
                 if not next(ticker):
                     self.write_buffer()
         finally:
