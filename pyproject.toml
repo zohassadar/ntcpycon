@@ -16,7 +16,7 @@ ntcpycon = 'ntcpycon.connect:start_connect'
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^2.20.0"
-black = "^22.6.0"
+black = "^24.3.0"
 pytest = "^7.1.2"
 pyreadline = "^2.1"
 
