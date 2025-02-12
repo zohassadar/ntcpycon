@@ -10,3 +10,4 @@ ignore_*
 .vscode/*
 .venv/*
 
+*.egg-info

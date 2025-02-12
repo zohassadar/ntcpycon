@@ -1,25 +1,24 @@
-[tool.poetry]
+[project]
 name = "ntcpycon"
 version = "0.1.0"
 description = "Connects alex-ong/NESTrisOCR to timotheeg/nestrischamps"
-authors = ["Richard"]
-license = "MIT"
+authors = [
+    {name = "zohassadar", email = "zohassadar@gmail.com"},
+]
+dependencies = ["pyyaml>=6.0.2", "python-edlinkn8 @ file:///home/rwd/ntcpycon/python-edlinkn8", "websockets>=14.2", "scapy>=2.6.1", "pyserial>=3.5"]
+requires-python = ">=3.12"
+readme = "README.md"
+license = {text = "MIT"}
 
-[tool.poetry.dependencies]
-python = "^3.10"
-websockets = "^10.3"
-scapy = "^2.4.5"
-PyYAML = "^6.0"
+[tool.setuptools]
+packages = ["ntcpycon"]
 
-[tool.poetry.scripts]
+[project.scripts]
 ntcpycon = 'ntcpycon.connect:start_connect'
 
-[tool.poetry.dev-dependencies]
-pre-commit = "^2.20.0"
-black = "^24.3.0"
-pytest = "^7.1.2"
-pyreadline = "^2.1"
+[tool.pdm]
+distribution = true
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
