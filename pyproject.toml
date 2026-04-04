@@ -5,7 +5,7 @@ description = "Connects alex-ong/NESTrisOCR to timotheeg/nestrischamps"
 authors = [
     {name = "zohassadar", email = "zohassadar@gmail.com"},
 ]
-dependencies = ["pyyaml>=6.0.2", "python-edlinkn8 @ file:///home/rwd/ntcpycon/python-edlinkn8", "websockets>=14.2", "scapy>=2.6.1", "pyserial>=3.5"]
+dependencies = ["pyyaml>=6.0.2", "websockets>=14.2", "scapy>=2.6.1", "pyserial>=3.5", "python-edlinkn8==0.0.2"]
 requires-python = ">=3.12"
 readme = "README.md"
 license = {text = "MIT"}

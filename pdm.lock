@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:06b908822395047238525c09d6e5125405e96911c6edc86bac7b414d2cd9a8a9"
+content_hash = "sha256:8ec120e16b55078e3ee31806869d5b2001f3c148c71782f9777ea6365421cdf0"
 
 [[metadata.targets]]
 requires_python = ">=3.12"
@@ -19,14 +19,6 @@ files = [
     {file = "pyserial-3.5-py2.py3-none-any.whl", hash = "sha256:c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0"},
     {file = "pyserial-3.5.tar.gz", hash = "sha256:3c77e014170dfffbd816e6ffc205e9842efb10be9f58ec16d3e8675b4925cddb"},
 ]
-
-[[package]]
-name = "python-edlinkn8"
-version = "0.0.1"
-requires_python = ">=3.10"
-path = "./python-edlinkn8"
-summary = "Everdrive N8 Python Utility"
-groups = ["default"]
 
 [[package]]
 name = "pyyaml"
