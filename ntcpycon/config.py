@@ -55,9 +55,11 @@ def get_receiver(
 
     elif (edlink := receiver.get("edlink", {})) or "edlink" in receiver.keys():
         launch = False
+        index = 0
         if edlink:
             launch = edlink.get("launch")
-        return EDLink(queues, launch=launch)
+            index = edlink.get("index")
+        return EDLink(queues, launch=launch, index=index)
 
     elif local_file := receiver.get("local_file", {}):
         filename = local_file.get("filename")

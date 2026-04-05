@@ -47,6 +47,11 @@ class ED2NTCCompactFrame:
 
         # header 2
         self.header = frame[0:2]
+        if len(frame) < 2:
+            print(f"{self.header=}")
+            self.invalid = True
+            return
+
 
         # frameCounter 2
         self.frame_counter0 = frame[2]
@@ -188,10 +193,11 @@ class EDLink(Receiver):
         self,
         queues: list[asyncio.Queue],
         launch: bool = False,
+        index: int = 0,
     ):
         self.queues = queues
         self.launch = launch
-        self.everdrive = edlinkn8.Everdrive()
+        self.everdrive = edlinkn8.Everdrive(index=index)
         if launch:
             # todo:  clean this
             gym = edlinkn8.NesRom.from_file("TetrisGYM/ed2ntc.nes")
@@ -234,6 +240,9 @@ class EDLink(Receiver):
                 logger.warning(f"Invalid frame length: {len(frame)}")
 
             edframe = options.FRAME(frame)
+            if edframe.invalid:
+                logger.error(f"Skipping invalid frame")
+                continue
             getattr(gym, options.UPDATE)(edframe)
             bframe = BinaryFrame3.from_gym_memory(gym)
 

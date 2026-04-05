@@ -35,7 +35,7 @@ data:
 32  data blob
 24  future
 2   trailer xor header = 0xFFFF
-64 
+64
 
 field:
 
@@ -47,7 +47,7 @@ field:
 40  playfield
 15  future
 2   trailer xor header = 0xFFFF
-64 
+64
 
 
 to_game:
@@ -175,6 +175,8 @@ class GymMemory:
     stats_l_hi: int = 0
     stats_i_lo: int = 0
     stats_i_hi: int = 0
+    playstate: int = 0
+    gamemode: int = 0
 
     # holds playfield that gets presented
     _playfield: bytearray = dataclasses.field(
@@ -300,6 +302,12 @@ class GymMemory:
         self.playstate = edframe.playstate
         self.game_start = edframe.game_start
         self.game_state = edframe.game_state
+        self.gamemode = self.game_state
+
+        if self.gamemode != 4 and self._previous_state.get('gamemode') == 4:
+            logger.warning(f"Game Over!!  Clearing playfield!")
+            for i in range(200):
+                self._playfield[i] = BLANK_TILE
 
         self.frame_counter_hi = edframe.frame_counter1
         self.frame_counter_lo = edframe.frame_counter0
