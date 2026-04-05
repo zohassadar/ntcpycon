@@ -178,6 +178,8 @@ class GymMemory:
     playstate: int = 0
     gamemode: int = 0
 
+    _playfield_clear: bool = False
+
     # holds playfield that gets presented
     _playfield: bytearray = dataclasses.field(
         default_factory=lambda: bytearray([BLANK_TILE] * 200)
@@ -303,11 +305,6 @@ class GymMemory:
         self.game_start = edframe.game_start
         self.game_state = edframe.game_state
         self.gamemode = self.game_state
-
-        if self.gamemode != 4 and self._previous_state.get('gamemode') == 4:
-            logger.warning(f"Game Over!!  Clearing playfield!")
-            for i in range(200):
-                self._playfield[i] = BLANK_TILE
 
         self.frame_counter_hi = edframe.frame_counter1
         self.frame_counter_lo = edframe.frame_counter0
@@ -480,6 +477,17 @@ class GymMemory:
     @property
     def compressed(self) -> bytearray:
         _compressed = bytearray(50)
+        if self.gamemode != 4 and self._playfield_clear:
+            return _compressed
+        elif self.gamemode != 4:
+            logger.warning("No active game.  Clearing playfield data.")
+            self._playfield_buffer[:] = bytearray(
+                [BLANK_TILE] * len(self._playfield_buffer)
+            )
+            self._playfield[:] = bytearray([BLANK_TILE] * len(self._playfield))
+            self._playfield_clear = True
+            return _compressed
+        self._playfield_clear = False
         for i in range(50):
             _compressed[i] = (
                 RAM_TO_NTC_TILES[self._playfield[i * 4]] << 6
