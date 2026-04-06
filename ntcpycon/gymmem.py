@@ -16,6 +16,7 @@ if typing.TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+TOPOUT_TIMER = 75
 
 """
 this is an idea for later:
@@ -179,6 +180,8 @@ class GymMemory:
     gamemode: int = 0
 
     _playfield_clear: bool = False
+    _topout: bool = False
+    _topout_timer: int = 0
 
     # holds playfield that gets presented
     _playfield: bytearray = dataclasses.field(
@@ -306,6 +309,14 @@ class GymMemory:
         self.game_state = edframe.game_state
         self.gamemode = self.game_state
 
+        self._topout = self.playstate == 10
+        if not self._topout:
+            self._topout_timer = 0
+        elif self._topout and self._previous_state.get('playstate') != 10:
+            self._topout_timer = TOPOUT_TIMER
+        elif self._topout and self._topout_timer:
+            self._topout_timer -= 1
+
         self.frame_counter_hi = edframe.frame_counter1
         self.frame_counter_lo = edframe.frame_counter0
 
@@ -391,7 +402,7 @@ class GymMemory:
         )
 
     def _convert_stat_or_idle(self, hi, lo):
-        if self.playstate == 10:
+        if self._topout and not self._topout_timer:
             return 0x3fe
         if self.gamemode != 4:
             return 0x3ef
