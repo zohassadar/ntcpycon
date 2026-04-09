@@ -8,10 +8,7 @@ import typing
 from collections import defaultdict
 
 if typing.TYPE_CHECKING:
-    from .edlink import (
-        ED2NTCFrame,
-        ED2NTCCompactFrame,
-    )
+    from .edlink import ED2NTCCompactFrame
 
 
 logger = logging.getLogger(__name__)
@@ -243,62 +240,6 @@ class GymMemory:
 
         else:
             raise RuntimeError(f"Unexpected playstate {self.playstate}")
-
-    def update_from_edlink(self, edframe: ED2NTCFrame):
-        self._general_update_start()
-
-        game_start_game_mode = edframe.game_start_game_state
-        game_mode_state_play_state = edframe.game_mode_state_play_state
-
-        # unpack:
-        self.game_start = game_start_game_mode >> 4
-        self.game_mode = game_start_game_mode & 0xF
-        self.game_mode_state = game_mode_state_play_state >> 4
-        self.playstate = game_mode_state_play_state & 0xF
-
-        self.row_y = edframe.row_y
-        self.next_piece = edframe.next_piece
-        self.current_piece = edframe.current_piece
-        self.tetrimino_x = edframe.tetrimino_x
-        self.tetrimino_y = edframe.tetrimino_y
-        self.autorepeat_x = edframe.autorepeat_x
-
-        self.frame_counter_hi = edframe.frame_counter1
-        self.frame_counter_lo = edframe.frame_counter0
-
-        self.lines_hi = edframe.lines1
-        self.lines_lo = edframe.lines0
-
-        self.level = edframe.level
-
-        self.score0 = edframe.score0
-        self.score1 = edframe.score1
-        self.score2 = edframe.score2
-        self.score3 = edframe.score3
-
-        self.completed_row0 = edframe.completed_row0
-        self.completed_row1 = edframe.completed_row1
-        self.completed_row2 = edframe.completed_row2
-        self.completed_row3 = edframe.completed_row3
-
-        self.stats_t_lo = edframe.stats[0]
-        self.stats_t_hi = edframe.stats[1]
-        self.stats_j_lo = edframe.stats[2]
-        self.stats_j_hi = edframe.stats[3]
-        self.stats_z_lo = edframe.stats[4]
-        self.stats_z_hi = edframe.stats[5]
-        self.stats_o_lo = edframe.stats[6]
-        self.stats_o_hi = edframe.stats[7]
-        self.stats_s_lo = edframe.stats[8]
-        self.stats_s_hi = edframe.stats[9]
-        self.stats_l_lo = edframe.stats[10]
-        self.stats_l_hi = edframe.stats[11]
-        self.stats_i_lo = edframe.stats[12]
-        self.stats_i_hi = edframe.stats[13]
-
-        self._playfield_buffer[:] = edframe.playfield
-
-        self._general_update_finish()
 
     def update_from_edlink_compact(self, edframe: ED2NTCCompactFrame):
         self._general_update_start()
