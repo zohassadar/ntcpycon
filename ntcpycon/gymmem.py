@@ -204,45 +204,11 @@ class GymMemory:
     game_start: int = 0
     playstate: int = 0
 
-    def _general_update_start(self):
+    def update_from_edlink_compact(self, edframe: ED2NTCCompactFrame):
         self.elapsed = int((time.time() - self._start_time) * 1000)
         self._previous_state = {
             k: v for k, v in dataclasses.asdict(self).items() if not k.startswith("_")
         }
-
-    def _general_update_finish_compact(self):
-        if self.playstate == 8:
-            self.spawn_autorepeat_x = self.autorepeat_x
-
-        if self.game_start != self._previous_state["game_start"]:
-            self.game_id += 1
-
-        self.overlay_lineclear_compact()
-        self._playfield[:] = self._playfield_buffer
-        self.overlay_piece()
-
-    def _general_update_finish(self):
-        if self.playstate == 8:
-            self.spawn_autorepeat_x = self.autorepeat_x
-        if self.game_start != self._previous_state["game_start"]:
-            self.game_id += 1
-
-        # update field according to playstate
-        if self.playstate in (1, 2, 5, 6, 7, 8):
-            self._playfield[:] = self._playfield_buffer
-            self.overlay_piece()
-
-        elif self.playstate == 4:
-            self.overlay_lineclear()
-
-        elif self.playstate in (0, 3, 10):
-            ...
-
-        else:
-            raise RuntimeError(f"Unexpected playstate {self.playstate}")
-
-    def update_from_edlink_compact(self, edframe: ED2NTCCompactFrame):
-        self._general_update_start()
 
         self.game_mode_state = edframe.game_mode_state
         self.playstate = edframe.playstate
@@ -305,7 +271,16 @@ class GymMemory:
             self.stats_l_hi = edframe.stats[11]
             self.stats_i_lo = edframe.stats[12]
             self.stats_i_hi = edframe.stats[13]
-        self._general_update_finish_compact()
+
+        if self.playstate == 8:
+            self.spawn_autorepeat_x = self.autorepeat_x
+
+        if self.game_start != self._previous_state["game_start"]:
+            self.game_id += 1
+
+        self.overlay_lineclear_compact()
+        self._playfield[:] = self._playfield_buffer
+        self.overlay_piece()
 
     @staticmethod
     def _hybrid_bcd_convert(hi: int, lo: int) -> int:
@@ -409,15 +384,6 @@ class GymMemory:
             for blank_range in ranges_by_row_y[self.row_y]:
                 for blank in blank_range:
                     self._playfield_buffer[offset + blank] = BLANK_TILE
-
-    def overlay_lineclear(self):
-        ranges_by_row_y = {
-            0: (range(4, 5), range(5, 6)),
-            1: (range(3, 5), range(5, 7)),
-            2: (range(2, 5), range(5, 8)),
-            3: (range(1, 5), range(5, 9)),
-            4: (range(0, 5), range(5, 10)),
-        }
 
         if self.frame_counter & 3:
             return
