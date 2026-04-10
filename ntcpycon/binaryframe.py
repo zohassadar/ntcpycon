@@ -203,4 +203,4 @@ class BinaryFrame3:
         _payload[13] = ((self.cur_piece_das & 0b11111) << 3) | (self.cur_piece & 0b111)
         _payload[14:23] = self.stats
         _payload[23:] = self.playfield
-        return bytes(_payload)
+        return _payload

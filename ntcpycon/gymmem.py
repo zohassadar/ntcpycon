@@ -173,8 +173,8 @@ class GymMemory:
     stats_l_hi: int = 0
     stats_i_lo: int = 0
     stats_i_hi: int = 0
-    playstate: int = 0
     gamemode: int = 0
+    playstate: int = 0
 
     _playfield_clear: bool = False
     _topout: bool = False
@@ -198,10 +198,7 @@ class GymMemory:
     game_id: int = 0
     spawn_autorepeat_x: int = 0
 
-    # unpacked:
-    game_mode: int = 0
-    game_mode_state: int = 0
-    game_start: int = 0
+    gamemode: int = 0
     playstate: int = 0
 
     def update_from_edlink_compact(self, edframe: ED2NTCCompactFrame):
@@ -210,11 +207,8 @@ class GymMemory:
             k: v for k, v in dataclasses.asdict(self).items() if not k.startswith("_")
         }
 
-        self.game_mode_state = edframe.game_mode_state
+        self.gamemode = edframe.gamemode
         self.playstate = edframe.playstate
-        self.game_start = edframe.game_start
-        self.game_state = edframe.game_state
-        self.gamemode = self.game_state
 
         self._topout = self.playstate == 10
         if not self._topout:
@@ -275,7 +269,7 @@ class GymMemory:
         if self.playstate == 8:
             self.spawn_autorepeat_x = self.autorepeat_x
 
-        if self.game_start != self._previous_state["game_start"]:
+        if self.gamemode == 4 != self._previous_state["gamemode"] != 4:
             self.game_id += 1
 
         self.overlay_lineclear_compact()
