@@ -315,7 +315,7 @@ class GymMemory:
         if self._topout and not self._topout_timer:
             return 0x3fe
         if self.gamemode != 4:
-            return 0x3ff
+            return 0x3fd
         return self._hybrid_bcd_convert(hi, lo)
 
     @property
