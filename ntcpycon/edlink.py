@@ -17,8 +17,26 @@ IDLE_MAX = 0.25
 CMD_SEND_STATS = 0x42
 
 
+class Chunker:
+    def __init__(self, frame: bytes):
+        self.i = 0
+        self.frame = frame
+
+    def one(self) -> int:
+        result = self.frame[self.i]
+        self.i += 1
+        return result
+
+    def span(self, count: int) -> bytes:
+        result = self.frame[self.i : self.i + count]
+        self.i += count
+        return result
+
+
 class ED2NTCCompactFrame:
     def __init__(self, frame: bytes):
+        c = Chunker(frame)
+
         self.row_y = 0
         self.completed_row0 = 0
         self.completed_row1 = 0
@@ -42,73 +60,73 @@ class ED2NTCCompactFrame:
         self.playfield_chunk = bytearray([0xEF] * 40)
 
         # header 2
-        self.header = frame[0:2]
+        self.header = c.span(2)
         if len(frame) < 2:
             print(f"{self.header=}")
             self.invalid = True
             return
 
         # frameCounter 2
-        self.frame_counter0 = frame[2]
-        self.frame_counter1 = frame[3]
+        self.frame_counter0 = c.one()
+        self.frame_counter1 = c.one()
 
         # gameMode
-        self.gamemode = frame[4]
+        self.gamemode = c.one()
 
         # playState 1
-        self.playstate = frame[5]
+        self.playstate = c.one()
 
         # frame type 1
-        self.frame_type = frame[6]
+        self.frame_type = c.one()
 
         if not self.frame_type:
             # ; gameMode 1
 
             # ; rowY 1
-            self.row_y = frame[7]
+            self.row_y = c.one()
             # ; completedRow 4
-            self.completed_row0 = frame[8]
-            self.completed_row1 = frame[9]
-            self.completed_row2 = frame[10]
-            self.completed_row3 = frame[11]
+            self.completed_row0 = c.one()
+            self.completed_row1 = c.one()
+            self.completed_row2 = c.one()
+            self.completed_row3 = c.one()
             # ; lines 2 (bcd)
-            self.lines0 = frame[12]
-            self.lines1 = frame[13]
+            self.lines0 = c.one()
+            self.lines1 = c.one()
             # ; levelNumber 1
-            self.level = frame[14]
+            self.level = c.one()
             # ; binScore 4
-            self.score0 = frame[15]
-            self.score1 = frame[16]
-            self.score2 = frame[17]
-            self.score3 = frame[18]
+            self.score0 = c.one()
+            self.score1 = c.one()
+            self.score2 = c.one()
+            self.score3 = c.one()
             # ; nextPiece 1
-            self.next_piece = frame[19]
+            self.next_piece = c.one()
             # ; currentPiece 1
-            self.current_piece = frame[20]
+            self.current_piece = c.one()
             # ; tetriminoX 1 Needed to determine where piece is in playfield
-            self.tetrimino_x = frame[21]
+            self.tetrimino_x = c.one()
             # ; tetriminoY 1 same
-            self.tetrimino_y = frame[22]
+            self.tetrimino_y = c.one()
 
             # ; autoRepeatX 1 current DAS
-            self.autorepeat_x = frame[23]
+            self.autorepeat_x = c.one()
             # ; statsByType 14
-            self.stats[:] = frame[24:38]
+            self.stats[:] = c.span(14)
 
-            # padding 22
-            self.padding = frame[38:62]
+            # padding 24
+            self.padding = c.span(24)
         else:
-            self.vram_row = frame[7]
-            self.playfield_chunk[:] = frame[8:48]
-            self.padding = frame[48:62]
+            self.vram_row = c.one()
+            self.playfield_chunk[:] = c.span(40)
+            self.padding = c.span(14)
 
-        self.footer = frame[62:64]
+        self.footer = c.span(2)
 
         header = int.from_bytes(self.header, "little")
         footer = int.from_bytes(self.footer, "little")
         self.invalid = False
         if header ^ footer != 0xFFFF:
-            logger.warning(f"{header:04x} ^ {footer:04x} != 0xFFFF")
+            logger.error(f"{header:04x} ^ {footer:04x} != 0xFFFF")
             self.invalid = True
 
 
@@ -167,7 +185,7 @@ class EDLink(Receiver):
                 _expected = (_last_fc + 1) & 0xFFFF
                 if _expected != fc:
                     dropped = fc - _expected
-                    if dropped  < 0:
+                    if dropped < 0:
                         logger.warning(f"Duplicate or backward jump {_last_fc} -> {fc}")
                     else:
                         logger.warning(
