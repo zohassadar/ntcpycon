@@ -10,11 +10,17 @@ from ntcpycon.abstract import Receiver
 from ntcpycon.gymmem import GymMemory
 from ntcpycon.binaryframe import BinaryFrame3
 
+
+from ntcpycon.adeque import AsyncDeque
+
 logger = logging.getLogger(__name__)
 
 IDLE_MAX = 0.25
 
 CMD_SEND_STATS = 0x42
+
+MAX_ED_RCV = 100
+MAX_ED_SEND = 100
 
 
 class Chunker:
@@ -62,7 +68,6 @@ class ED2NTCCompactFrame:
         # header 2
         self.header = c.span(2)
         if len(frame) < 2:
-            print(f"{self.header=}")
             self.invalid = True
             return
 
@@ -140,7 +145,8 @@ class EDLink(Receiver):
         self,
         queues: list[asyncio.Queue],
         launch: bool = False,
-        index: int = 0,
+        index: int | None = None,
+        serial: str | None = None,
     ):
         self.queues = queues
         self.launch = launch
@@ -213,3 +219,91 @@ class EDLink(Receiver):
             _last_frame_sent = bframe.compare_data
             for queue in self.queues:
                 await queue.put(bframe.payload)
+
+
+class NewEDLink:
+    def __init__(
+        self,
+        serial: str,
+    ):
+        self.everdrive = edlinkn8.Everdrive(serial=serial)
+        self.game_data = AsyncDeque(maxlen=MAX_ED_RCV)
+        self.game_control = AsyncDeque(maxlen=MAX_ED_SEND)
+
+    def connect(self, callback):
+        self.task = asyncio.create_task(self._connect())
+        self.task.add_done_callback(callback)
+
+    async def end(self):
+        await self.game_control.put(None)
+        await self.task
+        self.everdrive.port.close()
+
+    async def _connect(self):
+        loop = asyncio.get_running_loop()
+        _last_fc = None
+        _last_frame_sent = ()
+        _last_frame_sent_when = time.time()
+        gym = GymMemory()
+        bframe = BinaryFrame3()
+
+        async def _poll_game():
+            nonlocal _last_fc
+            nonlocal _last_frame_sent
+            nonlocal _last_frame_sent_when
+            await loop.run_in_executor(
+                None,
+                self.everdrive.write_fifo,
+                bytearray([CompactOptions.REQUEST]),
+            )
+            frame = await loop.run_in_executor(
+                None,
+                self.everdrive.receive_data,
+                CompactOptions.SIZE,
+            )
+            # frame drop/error detection
+            if len(frame) == CompactOptions.SIZE:
+                fc = int.from_bytes(frame[2:4], "little")
+                if _last_fc is None:
+                    logger.info(f"Discarding first frame: {fc:04X}")
+                    _last_fc = fc
+                    return
+                _expected = (_last_fc + 1) & 0xFFFF
+                if _expected != fc:
+                    dropped = fc - _expected
+                    if dropped < 0:
+                        logger.warning(f"Duplicate or backward jump {_last_fc} -> {fc}")
+                    else:
+                        logger.warning(
+                            f'dropped {dropped} frame{"s" if dropped>1 else ""}. '
+                            f"{_last_fc:04X} -> {fc:04X}"
+                        )
+                _last_fc = fc
+            else:
+                logger.warning(f"Invalid frame length: {len(frame)}")
+
+            edframe = ED2NTCCompactFrame(frame)
+            if edframe.invalid:
+                logger.error(f"Skipping invalid frame")
+                return
+            gym.update_from_edlink_compact(edframe)
+            bframe.update_from_gym_memory(gym)
+
+            now = time.time()
+            if (bframe.compare_data == _last_frame_sent) and (
+                now - _last_frame_sent_when < IDLE_MAX
+            ):
+                logger.debug(f"Skipping transmit of frame")
+                return
+            _last_frame_sent_when = now
+            _last_frame_sent = bframe.compare_data
+            await self.game_data.put(bframe.payload)
+
+        while True:
+            if self.game_control:
+                command = self.game_control.popleft()
+                if command is None:
+                    logger.info(f"Ending")
+                    return
+                logger.info(f"Received command: {command!r}")
+            await _poll_game()

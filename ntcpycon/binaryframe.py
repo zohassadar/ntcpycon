@@ -33,6 +33,28 @@ class BinaryFrame3:
         self.preview = 2**3 - 1
         self.cur_piece = 2**3 - 1
         self.cur_piece_das = 2**5 - 1
+        self._payload = bytearray(73)
+
+    def update_from_gym_memory(self, gym: GymMemory):
+        self.t = gym.stats_t
+        self.j = gym.stats_j
+        self.z = gym.stats_z
+        self.o = gym.stats_o
+        self.s = gym.stats_s
+        self.l = gym.stats_l
+        self.i = gym.stats_i
+        self.elapsed = gym.elapsed
+        self.game_id = gym.game_id
+        self.level = gym.level
+        self.lines = gym.lines
+        self.score = gym.score
+        self.preview = gym.next_piece_id
+        self.playfield = gym.compressed
+        # das trainer stats
+        self.instant_das = gym.autorepeat_x
+        self.cur_piece = gym.current_piece_id
+        self.cur_piece_das = gym.spawn_autorepeat_x
+
 
     @classmethod
     def from_gym_memory(cls, gym: GymMemory) -> BinaryFrame3:
@@ -176,31 +198,29 @@ class BinaryFrame3:
 
     @property
     def payload(self):
-        _payload = bytearray(73)
-        logger.debug(len(_payload))
-        _payload[0] = ((self.VERSION & 0b111) << 5) | ((self.GAME_TYPE & 0b11) << 3)
+        self._payload[0] = ((self.VERSION & 0b111) << 5) | ((self.GAME_TYPE & 0b11) << 3)
 
-        _payload[1] = (self.game_id & 0xFF00) >> 8
-        _payload[2] = (self.game_id & 0x00FF) >> 0
+        self._payload[1] = (self.game_id & 0xFF00) >> 8
+        self._payload[2] = (self.game_id & 0x00FF) >> 0
 
         # ctime - 28 bits
-        _payload[3] = (self.elapsed & 0xFF00000) >> 20
-        _payload[4] = (self.elapsed & 0x00FF000) >> 12
-        _payload[5] = (self.elapsed & 0x0000FF0) >> 4
-        _payload[6] = ((self.elapsed & 0x0F) << 4) | ((self.lines & 0xF00) >> 8)
+        self._payload[3] = (self.elapsed & 0xFF00000) >> 20
+        self._payload[4] = (self.elapsed & 0x00FF000) >> 12
+        self._payload[5] = (self.elapsed & 0x0000FF0) >> 4
+        self._payload[6] = ((self.elapsed & 0x0F) << 4) | ((self.lines & 0xF00) >> 8)
 
         # lines - 12 bits
-        _payload[7] = self.lines & 0xFF
+        self._payload[7] = self.lines & 0xFF
 
         # level - 8 bits
-        _payload[8] = self.level
+        self._payload[8] = self.level
 
         # score - 24 bits
-        _payload[9] = (self.score & 0xFF0000) >> 16
-        _payload[10] = (self.score & 0x00FF00) >> 8
-        _payload[11] = self.score & 0x0000FF
-        _payload[12] = ((self.instant_das & 0b11111) << 3) | (self.preview & 0b111)
-        _payload[13] = ((self.cur_piece_das & 0b11111) << 3) | (self.cur_piece & 0b111)
-        _payload[14:23] = self.stats
-        _payload[23:] = self.playfield
-        return _payload
+        self._payload[9] = (self.score & 0xFF0000) >> 16
+        self._payload[10] = (self.score & 0x00FF00) >> 8
+        self._payload[11] = self.score & 0x0000FF
+        self._payload[12] = ((self.instant_das & 0b11111) << 3) | (self.preview & 0b111)
+        self._payload[13] = ((self.cur_piece_das & 0b11111) << 3) | (self.cur_piece & 0b111)
+        self._payload[14:23] = self.stats
+        self._payload[23:] = self.playfield
+        return self._payload
