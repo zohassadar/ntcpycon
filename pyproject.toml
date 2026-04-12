@@ -15,6 +15,7 @@ packages = ["ntcpycon"]
 
 [project.scripts]
 ntcpycon = 'ntcpycon.connect:start_connect'
+ed2ntc = 'ntcpycon.ed2ntc:main'
 
 [tool.pdm]
 distribution = true

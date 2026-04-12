@@ -44,13 +44,23 @@ NTC  ---->  RECV      SEND ----> ED
 NTC  <----  SEND      RECV <---- ED
 """
 
+def encode_data(data: dict) -> bytes:
+    json_data = json.dumps(data).encode()
+    size = len(json_data).to_bytes(4, byteorder="little")
+    return size + json_data
 
 def get_ntc_rooms():
     with open(NTC_ROOMS) as file:
         return yaml.safe_load(file)
 
+def rom_name(args: list[str]) -> str:
+    sargs = sorted(args)
+    return f'tetris{"".join(sargs)}.nes'
 
-class Controller:
+def rom_exists(rom: str | pathlib.Path) -> bool:
+    return pathlib.Path(rom).exists()
+
+class Server:
     def __init__(
         self,
         port: int = CONTROL_PORT,
@@ -64,12 +74,14 @@ class Controller:
         self.ed_send_queues: dict[int, asyncio.Queue] = {}
 
         self.pairs: dict = {}
-
-        self.ntc_rooms = get_ntc_rooms()
+        self.load_ntc_rooms()
 
     def __repr__(self):
         port = self.port
         return f"{type(self).__name__}({port=})"
+
+    def load_ntc_rooms(self):
+        self.ntc_rooms = get_ntc_rooms()
 
     async def cmd_build_rom(
         self,
@@ -209,20 +221,6 @@ class Controller:
             logger.error("Problem with handling socket", exc_info=True)
 
 
-async def rom_name(args: list[str]) -> str:
-    return f'tetris{"".join(args)}.nes'
-
-
-async def hello(queue: asyncio.Queue):
-    while True:
-        job = await queue.get()
-        if job is None:
-            logger.info("bye")
-            break
-        print(f"helloing to {job}")
-        await asyncio.sleep(1)
-        print(f"done helloing to {job}")
-
 
 class NTC:
     async def __init__(self, uri: str):
@@ -244,10 +242,23 @@ class NTC:
             logger.debug("%s end", self.uri)
 
 
-q = asyncio.Queue()
+
+def send_command(cmd: str, **kwargs):
+    HOST = "127.0.0.1"  # The remote host
+    PORT = 9999  # The same port as used by the server
+    data = {"cmd": cmd, "kwargs": kwargs}
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((HOST, PORT))
+        payload = json.dumps(data).encode()
+        s.sendall(len(payload).to_bytes(4, byteorder="little"))
+        s.sendall(payload)
+        data = s.recv(1024)
+        s.close()
+    print("Received", repr(data))
 
 
-class Shell(cmd.Cmd):
+class Client(cmd.Cmd):
     def __init__(self, *args, **kwargs):
         print("starting")
         super().__init__(*args, **kwargs)
@@ -285,41 +296,20 @@ class Shell(cmd.Cmd):
         return True
 
 
-def encode_data(data: dict) -> bytes:
-    json_data = json.dumps(data).encode()
-    size = len(json_data).to_bytes(4, byteorder="little")
-    return size + json_data
-
-
-class Client:
-    def __init__(
-        self,
-        port: int = CONTROL_PORT,
-    ):
-        data = {"cmd": "rom_name", "kwargs": {"args": ["-p"]}}
-        data = {"cmd": "build_rom", "kwargs": {"build_args": ["-e", "-a"]}}
-        data = {
-            "cmd": "launch_rom",
-            "kwargs": {
-                "serial": "/dev/ttyACM0",
-                "rom": "/home/zo/src/TetrisGYM/tetris.nes",
-            },
-        }
-
-        # Echo client program
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "action",
+        "client_or_server",
         choices=["client", "server"],
     )
     args = parser.parse_args()
-    if args.action == "client":
-        Shell().cmdloop()
-    elif args.action == "server":
-        asyncio.run(Controller().serve())
+    if args.client_or_server == "client":
+        Client().cmdloop()
+    elif args.client_or_server == "server":
+        asyncio.run(Server().serve())
+
 
 if __name__ == "__main__":
     main()

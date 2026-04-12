@@ -6,7 +6,6 @@ import ssl
 from websockets.client import connect
 
 import ntcpycon.abstract
-import ntcpycon.pcap_replay
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -30,13 +29,16 @@ class WSSender(ntcpycon.abstract.Sender):
         no_verify = self.no_verify
         return f"{type(self).__name__}({uri=}, {no_verify=})"
 
-    async def read_handler(self, websocket):
+    async def read_handler(self, websocket, queue: Queue | None = None):
         async for message in websocket:
             logger.info(f"Received from websocket: {message}")
+            if queue is not None:
+                await queue.put(message)
 
-    async def write_handler(self, websocket):
+    async def write_handler(self, websocket, queue: Queue | None = None):
         ticker = itertools.cycle(range(INFO_CYCLE))
         frame_count = 0
+        q = self.queue if queue is None else queue
         while True:
             if not next(ticker):
                 logger.info(
@@ -46,7 +48,7 @@ class WSSender(ntcpycon.abstract.Sender):
                 logger.debug("Stopping")
                 break
             try:
-                message = await self.queue.get()
+                message = await q.get()
                 if not message:
                     logger.info("Empty message received.  Stopping.")
                     break
@@ -59,7 +61,13 @@ class WSSender(ntcpycon.abstract.Sender):
                 break
         logger.info("while loop broken")
 
+
     async def send(self):
+        """
+        this name is not good.
+
+        this should be called "init" or "run"
+        """
         websocket = await connect(self.uri, **self.connect_kwargs)  # type: ignore
         await asyncio.gather(
             self.read_handler(websocket),
