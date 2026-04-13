@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import asyncio
 import logging
 import sys
@@ -7,11 +8,9 @@ import time
 import edlinkn8
 
 from ntcpycon.abstract import Receiver
-from ntcpycon.gymmem import GymMemory
-from ntcpycon.binaryframe import BinaryFrame3
-
-
 from ntcpycon.adeque import AsyncDeque
+from ntcpycon.binaryframe import BinaryFrame3
+from ntcpycon.gymmem import GymMemory
 
 logger = logging.getLogger(__name__)
 
@@ -120,12 +119,12 @@ class ED2NTCCompactFrame:
             # ; statsByType 14
             self.stats[:] = c.span(14)
 
-            # padding 24
-            self.padding = c.span(24)
+            # padding 14
+            self.padding = c.span(14)
         else:
             self.vram_row = c.one()
             self.playfield_chunk[:] = c.span(40)
-            self.padding = c.span(14)
+            self.padding = c.span(4)
 
         self.footer = c.span(2)
 
@@ -139,7 +138,7 @@ class ED2NTCCompactFrame:
 
 class CompactOptions:
     REQUEST = 0x43
-    SIZE = 0x40
+    SIZE = 0x36
 
 
 class EDLink(Receiver):
@@ -148,7 +147,6 @@ class EDLink(Receiver):
         queues: list[asyncio.Queue],
         launch: bool = False,
         index: int | None = None,
-        serial: str | None = None,
     ):
         self.queues = queues
         self.launch = launch
@@ -176,10 +174,14 @@ class EDLink(Receiver):
 
         while True:
             await loop.run_in_executor(
-                None, self.everdrive.write_fifo, bytearray([CompactOptions.REQUEST]),
+                None,
+                self.everdrive.write_fifo,
+                bytearray([CompactOptions.REQUEST]),
             )
             frame = await loop.run_in_executor(
-                None, self.everdrive.receive_data, CompactOptions.SIZE,
+                None,
+                self.everdrive.receive_data,
+                CompactOptions.SIZE,
             )
             # frame drop/error detection
             if len(frame) == CompactOptions.SIZE:
