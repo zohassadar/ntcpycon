@@ -45,12 +45,15 @@ def encode_data(data: dict) -> bytes:
 
 def send_command(cmd: str, **kwargs):
     payload = encode_data(dict(cmd=cmd, kwargs=kwargs))
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect(("localhost", CONTROL_PORT))
-        s.sendall(payload)
-        # data = s.recv(1024)
-        s.close()
-    # print(data.decode())
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect(("localhost", CONTROL_PORT))
+            s.sendall(payload)
+            # data = s.recv(1024)
+            s.close()
+        # print(data.decode())
+    except Exception as exc:
+        print(f"{type(exc).__name__}: {exc}")
 
 
 def get_everdrives():
