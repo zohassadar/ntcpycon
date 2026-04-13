@@ -480,6 +480,10 @@ Roms:
     def do_stat(self, _):
         send_command("check_status")
 
+    def do_refresh(self, _):
+        send_command("refresh_everdrives")
+        send_command("refresh_roomlist")
+
     def do_data(self, raw_args):
         def hex_int(i):
             if i.startswith("0x"):
@@ -617,7 +621,6 @@ Everdrives:
         everdrive = everdrives[args.everdrive]
         rom = roms[args.rom]
 
-        print(f"gonna launch {rom.name} to {everdrive}")
         try:
             Everdrive(serial=everdrive).launch_rom_from_file(rom)
         except:
@@ -632,7 +635,7 @@ Everdrives:
         print("")
         return True
 
-    def do_EXIT(self, _):
+    def do_exit(self, _):
         return True
 
 
