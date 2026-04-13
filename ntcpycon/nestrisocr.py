@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import itertools
 import json
@@ -6,8 +8,8 @@ import re
 import time
 
 import ntcpycon.abstract
-import ntcpycon.nestrisocr
 import ntcpycon.binaryframe
+import ntcpycon.nestrisocr
 
 Receiver = ntcpycon.abstract.Receiver
 BinaryFrame3 = ntcpycon.binaryframe.BinaryFrame3
@@ -48,9 +50,7 @@ class NOCRPayload:
         self._gameid: str | None = self.payload.get("gameid")
 
         self.gameid: int = (
-            int(self._gameid) & (2**16 - 1)
-            if self._gameid is not None
-            else 2**16 - 1
+            int(self._gameid) & (2**16 - 1) if self._gameid is not None else 2**16 - 1
         )
 
         self._preview: str | None = self.payload.get("preview")
@@ -153,7 +153,6 @@ class NOCRPayload:
         return result
 
 
-
 class NESTrisOCRServer(Receiver):
     def __init__(
         self,
@@ -189,8 +188,7 @@ class NESTrisOCRServer(Receiver):
     async def write_handler(
         self,
         client_writer: asyncio.StreamWriter,
-    ):
-        ...
+    ): ...
 
     async def read_handler(
         self,

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import sys
 
@@ -6,10 +8,9 @@ import yaml
 import ntcpycon.abstract
 import ntcpycon.edlink
 import ntcpycon.file_handler
-import ntcpycon.pcap_replay
 import ntcpycon.nestrisocr
+import ntcpycon.pcap_replay
 import ntcpycon.ws_sender
-
 
 WSSender = ntcpycon.ws_sender.WSSender
 NESTrisOCRServer = ntcpycon.nestrisocr.NESTrisOCRServer

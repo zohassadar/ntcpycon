@@ -1,21 +1,19 @@
+from __future__ import annotations
+
 import abc
 
 
 class Receiver(abc.ABC):
     @abc.abstractmethod
-    def __init__(self, *args, **kwargs):
-        ...
+    def __init__(self, *args, **kwargs): ...
 
     @abc.abstractmethod
-    async def receive(self):
-        ...
+    async def receive(self): ...
 
 
 class Sender(abc.ABC):
     @abc.abstractmethod
-    def __init__(self, *args, **kwargs):
-        ...
+    def __init__(self, *args, **kwargs): ...
 
     @abc.abstractmethod
-    async def send(self):
-        ...
+    async def send(self): ...

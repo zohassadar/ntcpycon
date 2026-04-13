@@ -1,4 +1,6 @@
 # https://gist.github.com/jmfrank63/5fb9909a8e06c91dead9265cab2f33de
+from __future__ import annotations
+
 import asyncio
 from collections import deque
 

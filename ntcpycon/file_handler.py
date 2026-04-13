@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import asyncio
 import gzip
 import itertools
 import logging
 import sys
+
 import ntcpycon.abstract
 
 WRITE_WAIT_LOOPS = 500
@@ -51,10 +54,12 @@ class FileReceiver(Receiver):
                     break
                 version = int.from_bytes(first, "big") >> 5
                 if version not in FRAME_SIZE_BY_VERSION.keys():
-                    raise Exception (f"Invalid version in byte: {version} from {first.hex()}")
+                    raise Exception(
+                        f"Invalid version in byte: {version} from {first.hex()}",
+                    )
                 length = FRAME_SIZE_BY_VERSION[version]
                 payload = bytearray(first)
-                payload.extend(gzfile.read(length-1))
+                payload.extend(gzfile.read(length - 1))
                 for queue in self.queues:
                     await queue.put(bytes(payload))
 

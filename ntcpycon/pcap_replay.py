@@ -3,7 +3,8 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from scapy.all import PacketList, rdpcap
+from scapy.all import PacketList
+from scapy.all import rdpcap
 from scapy.packet import Raw
 
 import ntcpycon.abstract

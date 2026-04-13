@@ -1,10 +1,11 @@
 from __future__ import annotations
+
 import logging
 import typing
 
 if typing.TYPE_CHECKING:
-    from .nestrisocr import NOCRPayload
     from .gymmem import GymMemory
+    from .nestrisocr import NOCRPayload
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -54,7 +55,6 @@ class BinaryFrame3:
         self.instant_das = gym.autorepeat_x
         self.cur_piece = gym.current_piece_id
         self.cur_piece_das = gym.spawn_autorepeat_x
-
 
     @classmethod
     def from_gym_memory(cls, gym: GymMemory) -> BinaryFrame3:
@@ -198,7 +198,9 @@ class BinaryFrame3:
 
     @property
     def payload(self):
-        self._payload[0] = ((self.VERSION & 0b111) << 5) | ((self.GAME_TYPE & 0b11) << 3)
+        self._payload[0] = ((self.VERSION & 0b111) << 5) | (
+            (self.GAME_TYPE & 0b11) << 3
+        )
 
         self._payload[1] = (self.game_id & 0xFF00) >> 8
         self._payload[2] = (self.game_id & 0x00FF) >> 0
@@ -220,7 +222,9 @@ class BinaryFrame3:
         self._payload[10] = (self.score & 0x00FF00) >> 8
         self._payload[11] = self.score & 0x0000FF
         self._payload[12] = ((self.instant_das & 0b11111) << 3) | (self.preview & 0b111)
-        self._payload[13] = ((self.cur_piece_das & 0b11111) << 3) | (self.cur_piece & 0b111)
+        self._payload[13] = ((self.cur_piece_das & 0b11111) << 3) | (
+            self.cur_piece & 0b111
+        )
         self._payload[14:23] = self.stats
         self._payload[23:] = self.playfield
         return self._payload

@@ -4,7 +4,6 @@ import dataclasses
 import logging
 import time
 import typing
-
 from collections import defaultdict
 
 if typing.TYPE_CHECKING:
@@ -213,7 +212,7 @@ class GymMemory:
         self._topout = self.playstate == 10
         if not self._topout:
             self._topout_timer = 0
-        elif self._topout and self._previous_state.get('playstate') != 10:
+        elif self._topout and self._previous_state.get("playstate") != 10:
             self._topout_timer = TOPOUT_TIMER
         elif self._topout and self._topout_timer:
             self._topout_timer -= 1
@@ -313,9 +312,9 @@ class GymMemory:
 
     def _convert_stat_or_idle(self, hi, lo):
         if self._topout and not self._topout_timer:
-            return 0x3fe
+            return 0x3FE
         if self.gamemode != 4:
-            return 0x3fd
+            return 0x3FD
         return self._hybrid_bcd_convert(hi, lo)
 
     @property

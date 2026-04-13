@@ -1,13 +1,14 @@
+from __future__ import annotations
+
 import asyncio
 import itertools
 import logging
 import ssl
 
-from ntcpycon.adeque import AsyncDeque
-
 from websockets.client import connect
 
 import ntcpycon.abstract
+from ntcpycon.adeque import AsyncDeque
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -65,7 +66,6 @@ class WSSender(ntcpycon.abstract.Sender):
                 break
         logger.info("while loop broken")
 
-
     async def send(self):
         """
         this name is not good.
@@ -77,7 +77,6 @@ class WSSender(ntcpycon.abstract.Sender):
             self.read_handler(websocket),
             self.write_handler(websocket),
         )
-
 
 
 class NewWSSender:
@@ -114,12 +113,12 @@ class NewWSSender:
 
     async def end(self):
         await self.game_data.stop()
-        if getattr(self, 'websocket', None):
+        if getattr(self, "websocket", None):
             await self.websocket.close()
         if self.task:
-            logger.info('awaiting task end')
+            logger.info("awaiting task end")
             await self.task
-            logger.info('task ended')
+            logger.info("task ended")
 
     async def connect(self):
         self.websocket = await connect(self.uri, **self.connect_kwargs)  # type: ignore
