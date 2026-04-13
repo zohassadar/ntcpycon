@@ -249,16 +249,30 @@ class NewEDLink:
         _last_fc = None
         _last_frame_sent = ()
         _last_frame_sent_when = time.time()
+        _pending_command: list[int] | None = None
 
         async def _poll_game():
             nonlocal _last_fc
             nonlocal _last_frame_sent
             nonlocal _last_frame_sent_when
+            nonlocal _pending_command
+
+            if _pending_command:
+                request = bytes(_pending_command)
+                logger.info(f"Game control command: {request.hex()!r}")
+            else:
+                request = bytes([CompactOptions.REQUEST])
+
             await loop.run_in_executor(
                 None,
                 self.everdrive.write_fifo,
-                bytearray([CompactOptions.REQUEST]),
+                request,
             )
+            if _pending_command:
+                logger.info(f"Skip poll after command: {request.hex()!r}")
+                _pending_command = None
+                return
+
             frame = await loop.run_in_executor(
                 None,
                 self.everdrive.receive_data,
@@ -314,5 +328,5 @@ class NewEDLink:
                 if command is None:
                     logger.info(f"Ending")
                     return
-                logger.info(f"Received command: {command!r}")
+                _pending_command = command
             await _poll_game()

@@ -1,21 +1,23 @@
+from __future__ import annotations
+
 import argparse
 import asyncio
 import cmd
 import json
 import logging
 import pathlib
+import random
 import shutil
-import sys
 import socket
-import json
 import subprocess
+import sys
+
 import yaml
-
-from ntcpycon.ws_sender import NewWSSender
-from ntcpycon.edlink import NewEDLink
-from ntcpycon.adeque import AsyncDeque
-
 from edlinkn8 import Everdrive
+
+from ntcpycon.adeque import AsyncDeque
+from ntcpycon.edlink import NewEDLink
+from ntcpycon.ws_sender import NewWSSender
 
 CONTROL_PORT = 9999
 NTC_ROOMS = "rooms.yml"
@@ -23,6 +25,9 @@ GYM_PATH = pathlib.Path.cwd() / "TetrisGYM"
 BUILD_SCRIPT = GYM_PATH / "build.js"
 DEFAULT_BUILD_ARGS = ["-e"]
 NODE = shutil.which("node")
+
+
+CMD_SEND_SEED = 0x44
 
 if NODE is None:
     raise RuntimeError("missing node")
@@ -191,6 +196,18 @@ class Server:
         logger.info(f"disconnecting everdrive {everdrive_idx}")
         await edlink.end()
 
+    async def cmd_bytes_to_everdrive(
+        self,
+        *,
+        everdrive_idx: int,
+        data: list[int],
+    ):
+        if not (edlink := self.connected_everdrives.get(everdrive_idx)):
+            logger.error(f"everdrive {everdrive_idx} not connected")
+            return
+        logger.info(f"Sending {bytes(data).hex()} to everdrive {everdrive_idx}")
+        await edlink.game_control.put(data)
+
     async def cmd_connect_pair(
         self,
         *,
@@ -239,7 +256,9 @@ class Server:
             return
         for ed_room, pair in self.data_pairs.items():
             if ed_room == (everdrive_idx, room_idx):
-                logger.info(f"Disconnecting everdrive {everdrive_idx} from room {room_idx}")
+                logger.info(
+                    f"Disconnecting everdrive {everdrive_idx} from room {room_idx}",
+                )
                 await pair.end()
                 return
         logger.error(
@@ -247,21 +266,26 @@ class Server:
         )
 
     async def cmd_check_status(self):
-        logger.info(f"Everdrives:")
+        logger.info(f"\nEverdrives:")
         for idx, port in self.everdrives.items():
-            logger.info(f"Everdrive {idx} - {port}: {'connected' if self.connected_everdrives.get(idx) else 'idle'}")
+            logger.info(
+                f"{idx} - {port}: {'connected' if self.connected_everdrives.get(idx) else 'idle'}",
+            )
 
-        logger.info(f"Rooms:")
+        logger.info(f"\nRooms:")
         for idx, room in self.ntc_rooms.items():
-            logger.info(f"Room {idx} - {room}: {'connected' if self.connected_rooms.get(idx) else 'idle'}")
+            logger.info(
+                f"{idx} - {room.split('/')[-1]}: {'connected' if self.connected_rooms.get(idx) else 'idle'}",
+            )
 
-        logger.info (f"Active pairs:")
+        logger.info(f"\nActive pairs:")
         for (e, r), pair in self.data_pairs.items():
-            logger.info(f"Everdrive {e} <-> room {r}")
+            logger.info(f"Everdrive {e} <-> Room {r}")
 
-        logger.info (f"Active jobs:")
-        for job in self._jobs:
-            print(job.get_name())
+        # logger.info(f"Active jobs:")
+        # for job in self._jobs:
+        #     print(job.get_name())
+        #
 
     async def unknown(
         self,
@@ -331,8 +355,31 @@ class Client(cmd.Cmd):
     intro = "everdrive ntc connector.  Type help or ? to list commands.\n"
     file = None
 
-    def default(self, command):
-        print(f"{command!r} not defined", file=sys.stderr)
+    @staticmethod
+    def everdrive_help(everdrives):
+        return f"""
+Everdrives:
+{'\n'.join(f"{idx}: {everdrive}" for idx,everdrive in everdrives.items())}
+"""
+
+    @staticmethod
+    def room_help(rooms):
+        return f"""
+Rooms:
+{'\n'.join(f"{idx}: {room}" for idx,room in rooms.items())}
+"""
+
+    @staticmethod
+    def roms_help(roms):
+        return f"""
+Roms:
+{'\n'.join(f"{idx}: {rom.name}" for idx,rom in roms.items())}
+"""
+
+    def default(self, line):
+        if line.strip().startswith("#"):
+            return
+        print(f"{line!r} not defined", file=sys.stderr)
 
     def do_build(self, args):
         build_args = DEFAULT_BUILD_ARGS + args.split()
@@ -374,23 +421,20 @@ class Client(cmd.Cmd):
     def do_pair(self, raw_args):
         everdrives = get_everdrives()
         rooms = get_ntc_rooms()
-        help_ = f"""
-Everdrives:
-{'\n'.join(f"{idx}: {everdrive}" for idx,everdrive in everdrives.items())}
+        help_ = self.everdrive_help(everdrives)
 
-Rooms:
-{'\n'.join(f"{idx}: {room}" for idx,room in rooms.items())}
-
-"""
         parser = argparse.ArgumentParser(
             prog="pair",
             description=help_,
             formatter_class=argparse.RawDescriptionHelpFormatter,
         )
-        parser.add_argument("room", type=int, metavar="<room>", choices=rooms)
         parser.add_argument(
-            "everdrive", type=int, metavar="<everdrive>", choices=everdrives,
+            "everdrive",
+            type=int,
+            metavar="<everdrive>",
+            choices=everdrives,
         )
+        parser.add_argument("room", type=int, metavar="<room>", choices=rooms)
         parser.add_argument(
             "-d",
             "--disconnect",
@@ -409,11 +453,7 @@ Rooms:
 
     def do_wsc(self, raw_args):
         rooms = get_ntc_rooms()
-        help_ = f"""
-Rooms:
-{'\n'.join(f"{idx}: {room}" for idx,room in rooms.items())}
-
-"""
+        help_ = self.room_help(rooms)
         parser = argparse.ArgumentParser(
             prog="wsc",
             description=help_,
@@ -437,20 +477,98 @@ Rooms:
     def do_stat(self, _):
         send_command("check_status")
 
+    def do_data(self, raw_args):
+        def hex_int(i):
+            if i.startswith("0x"):
+                return int(i[2:], 16)
+            return int(i)
+
+        everdrives = get_everdrives()
+        help_ = self.everdrive_help(everdrives)
+        parser = argparse.ArgumentParser(
+            prog="data",
+            description=help_,
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+        )
+        parser.add_argument(
+            "everdrive",
+            type=int,
+            metavar="<everdrive>",
+            choices=everdrives,
+        )
+        parser.add_argument(
+            "data",
+            type=hex_int,
+            nargs="+",
+        )
+        try:
+            args = parser.parse_args(raw_args.split())
+        except:
+            return
+
+        send_command(
+            f"bytes_to_everdrive",
+            everdrive_idx=args.everdrive,
+            data=args.data,
+        )
+
+    def do_seed(self, raw_args):
+        everdrives = get_everdrives()
+        help_ = self.everdrive_help(everdrives)
+        parser = argparse.ArgumentParser(
+            prog="seed",
+            description=help_,
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+        )
+        parser.add_argument(
+            "everdrives",
+            nargs=2,
+            type=int,
+            choices=everdrives,
+        )
+        try:
+            args = parser.parse_args(raw_args.split())
+        except:
+            return
+        if len(set(args.everdrives)) != len(args.everdrives):
+            print(f"Choose unique everdrives")
+            return
+
+        seed = [
+            random.randint(0x0, 0xFF),
+            random.randint(0x2, 0xFF),  # Avoid buggy seeds
+            random.randint(0x0, 0xFF),
+        ]
+
+        print(
+            f"Generated seed {''.join(f'{b:02X}' for b in seed)} for "
+            f"everdrives {args.everdrives[0]} and {args.everdrives[1]}",
+        )
+        send_command(
+            f"bytes_to_everdrive",
+            everdrive_idx=args.everdrives[0],
+            data=[CMD_SEND_SEED, *seed],
+        )
+        send_command(
+            f"bytes_to_everdrive",
+            everdrive_idx=args.everdrives[1],
+            data=[CMD_SEND_SEED, *seed],
+        )
+
     def do_edc(self, raw_args):
         everdrives = get_everdrives()
-        help_ = f"""
-Everdrives:
-{'\n'.join(f"{idx}: {everdrive}" for idx,everdrive in everdrives.items())}
+        help_ = self.everdrive_help(everdrives)
 
-"""
         parser = argparse.ArgumentParser(
             prog="edc",
             description=help_,
             formatter_class=argparse.RawDescriptionHelpFormatter,
         )
         parser.add_argument(
-            "everdrive", type=int, metavar="<everdrive>", choices=everdrives,
+            "everdrive",
+            type=int,
+            metavar="<everdrive>",
+            choices=everdrives,
         )
         parser.add_argument(
             "-d",
@@ -484,7 +602,10 @@ Everdrives:
         )
         parser.add_argument("rom", type=int, metavar="<rom>", choices=roms)
         parser.add_argument(
-            "everdrive", type=int, metavar="<everdrive>", choices=everdrives,
+            "everdrive",
+            type=int,
+            metavar="<everdrive>",
+            choices=everdrives,
         )
         try:
             args = parser.parse_args(raw_args.split())
