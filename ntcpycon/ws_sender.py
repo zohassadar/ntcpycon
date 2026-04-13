@@ -122,13 +122,10 @@ class NewWSSender:
             await self.task
             logger.info('task ended')
 
-    def connect(self, callback):
-        self.task = asyncio.create_task(self._connect())
-        self.task.add_done_callback(callback)
-
-    async def _connect(self):
+    async def connect(self):
         self.websocket = await connect(self.uri, **self.connect_kwargs)  # type: ignore
         self.task = asyncio.gather(
             self.read_handler(),
             self.write_handler(),
         )
+        await self.task

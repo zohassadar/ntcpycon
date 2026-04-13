@@ -230,9 +230,9 @@ class NewEDLink:
         self.game_data = AsyncDeque(maxlen=MAX_ED_RCV)
         self.game_control = AsyncDeque(maxlen=MAX_ED_SEND)
 
-    def connect(self, callback):
+    async def connect(self):
         self.task = asyncio.create_task(self._connect())
-        self.task.add_done_callback(callback)
+        await self.task
 
     async def end(self):
         await self.game_control.put(None)
