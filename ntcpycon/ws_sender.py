@@ -46,7 +46,7 @@ class WSSender(ntcpycon.abstract.Sender):
         while True:
             if not next(ticker):
                 logger.info(
-                    f"Web Socket to {self.masked_uri} open.  Frame Send Count: {frame_count}"
+                    f"Web Socket to {self.masked_uri} open.  Frame Send Count: {frame_count}",
                 )
             if self.stopped:
                 logger.debug("Stopping")
@@ -80,7 +80,6 @@ class WSSender(ntcpycon.abstract.Sender):
 
 
 
-
 class NewWSSender:
     def __init__(self, uri: str, no_verify=True):
         self.uri = uri
@@ -104,7 +103,7 @@ class NewWSSender:
         async for message in self.game_data:
             if not next(ticker):
                 logger.info(
-                    f"Web Socket to {self.masked_uri} open.  Frame Send Count: {frame_count}"
+                    f"Web Socket to {self.masked_uri} open.  Frame Send Count: {frame_count}",
                 )
             try:
                 await self.websocket.send(message)

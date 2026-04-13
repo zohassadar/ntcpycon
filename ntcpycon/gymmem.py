@@ -182,12 +182,12 @@ class GymMemory:
 
     # holds playfield that gets presented
     _playfield: bytearray = dataclasses.field(
-        default_factory=lambda: bytearray([BLANK_TILE] * 256)
+        default_factory=lambda: bytearray([BLANK_TILE] * 256),
     )
 
     # holds playfield that is updated from frame
     _playfield_buffer: bytearray = dataclasses.field(
-        default_factory=lambda: bytearray([BLANK_TILE] * 256)
+        default_factory=lambda: bytearray([BLANK_TILE] * 256),
     )
 
     _previous_state: dict = dataclasses.field(default_factory=dict)
@@ -223,7 +223,7 @@ class GymMemory:
 
         if edframe.frame_type:
             for i, offset in enumerate(
-                range(edframe.vram_row * 10, edframe.vram_row * 10 + 40)
+                range(edframe.vram_row * 10, edframe.vram_row * 10 + 40),
             ):
                 if offset >= 200:
                     break
@@ -308,7 +308,7 @@ class GymMemory:
                 self.completed_row1,
                 self.completed_row2,
                 self.completed_row3,
-            ]
+            ],
         )
 
     def _convert_stat_or_idle(self, hi, lo):
@@ -401,7 +401,7 @@ class GymMemory:
         elif self.gamemode != 4:
             logger.warning("No active game.  Clearing playfield data.")
             self._playfield_buffer[:] = bytearray(
-                [BLANK_TILE] * len(self._playfield_buffer)
+                [BLANK_TILE] * len(self._playfield_buffer),
             )
             self._playfield[:] = bytearray([BLANK_TILE] * len(self._playfield))
             self._playfield_clear = True

@@ -19,6 +19,8 @@ IDLE_MAX = 0.25
 
 CMD_SEND_STATS = 0x42
 
+MAX_MISSED_FRAMES = 5
+
 MAX_ED_RCV = 100
 MAX_ED_SEND = 100
 
@@ -174,13 +176,11 @@ class EDLink(Receiver):
 
         while True:
             await loop.run_in_executor(
-                None, self.everdrive.write_fifo, bytearray([CompactOptions.REQUEST])
+                None, self.everdrive.write_fifo, bytearray([CompactOptions.REQUEST]),
             )
             frame = await loop.run_in_executor(
-                None, self.everdrive.receive_data, CompactOptions.SIZE
+                None, self.everdrive.receive_data, CompactOptions.SIZE,
             )
-            logger.debug(f"Received {len(frame)} bytes from ed")
-
             # frame drop/error detection
             if len(frame) == CompactOptions.SIZE:
                 fc = int.from_bytes(frame[2:4], "little")
@@ -196,7 +196,7 @@ class EDLink(Receiver):
                     else:
                         logger.warning(
                             f'dropped {dropped} frame{"s" if dropped>1 else ""}. '
-                            f"{_last_fc:04X} -> {fc:04X}"
+                            f"{_last_fc:04X} -> {fc:04X}",
                         )
                 _last_fc = fc
             else:
@@ -204,7 +204,7 @@ class EDLink(Receiver):
 
             edframe = ED2NTCCompactFrame(frame)
             if edframe.invalid:
-                logger.error(f"Skipping invalid frame")
+                logger.error("Skipping invalid frame")
                 continue
             gym.update_from_edlink_compact(edframe)
             bframe = BinaryFrame3.from_gym_memory(gym)
@@ -213,7 +213,7 @@ class EDLink(Receiver):
             if (bframe.compare_data == _last_frame_sent) and (
                 now - _last_frame_sent_when < IDLE_MAX
             ):
-                logger.debug(f"Skipping transmit of frame")
+                logger.debug("Skipping transmit of frame")
                 continue
             _last_frame_sent_when = now
             _last_frame_sent = bframe.compare_data
@@ -229,6 +229,9 @@ class NewEDLink:
         self.everdrive = edlinkn8.Everdrive(serial=serial)
         self.game_data = AsyncDeque(maxlen=MAX_ED_RCV)
         self.game_control = AsyncDeque(maxlen=MAX_ED_SEND)
+        self.gym = GymMemory()
+        self.bframe = BinaryFrame3()
+        self.frames_missed = 0
 
     async def connect(self):
         self.task = asyncio.create_task(self._connect())
@@ -244,8 +247,6 @@ class NewEDLink:
         _last_fc = None
         _last_frame_sent = ()
         _last_frame_sent_when = time.time()
-        gym = GymMemory()
-        bframe = BinaryFrame3()
 
         async def _poll_game():
             nonlocal _last_fc
@@ -262,44 +263,50 @@ class NewEDLink:
                 CompactOptions.SIZE,
             )
             # frame drop/error detection
-            if len(frame) == CompactOptions.SIZE:
-                fc = int.from_bytes(frame[2:4], "little")
-                if _last_fc is None:
-                    logger.info(f"Discarding first frame: {fc:04X}")
-                    _last_fc = fc
-                    return
-                _expected = (_last_fc + 1) & 0xFFFF
-                if _expected != fc:
-                    dropped = fc - _expected
-                    if dropped < 0:
-                        logger.warning(f"Duplicate or backward jump {_last_fc} -> {fc}")
-                    else:
-                        logger.warning(
-                            f'dropped {dropped} frame{"s" if dropped>1 else ""}. '
-                            f"{_last_fc:04X} -> {fc:04X}"
-                        )
-                _last_fc = fc
-            else:
+            if not len(frame) == CompactOptions.SIZE:
+                self.frames_missed += 1
                 logger.warning(f"Invalid frame length: {len(frame)}")
+                return
+
+            self.frames_missed = 0
+            fc = int.from_bytes(frame[2:4], "little")
+            if _last_fc is None:
+                logger.info(f"Discarding first frame: {fc:04X}")
+                _last_fc = fc
+                return
+            _expected = (_last_fc + 1) & 0xFFFF
+            if _expected != fc:
+                dropped = fc - _expected
+                if dropped < 0:
+                    logger.warning(f"Duplicate or backward jump {_last_fc} -> {fc}")
+                else:
+                    logger.warning(
+                        f'dropped {dropped} frame{"s" if dropped>1 else ""}. '
+                        f"{_last_fc:04X} -> {fc:04X}",
+                    )
+            _last_fc = fc
 
             edframe = ED2NTCCompactFrame(frame)
             if edframe.invalid:
-                logger.error(f"Skipping invalid frame")
+                logger.error("Skipping invalid frame")
                 return
-            gym.update_from_edlink_compact(edframe)
-            bframe.update_from_gym_memory(gym)
+            self.gym.update_from_edlink_compact(edframe)
+            self.bframe.update_from_gym_memory(self.gym)
 
             now = time.time()
-            if (bframe.compare_data == _last_frame_sent) and (
+            if (self.bframe.compare_data == _last_frame_sent) and (
                 now - _last_frame_sent_when < IDLE_MAX
             ):
-                logger.debug(f"Skipping transmit of frame")
+                logger.debug("Skipping transmit of frame")
                 return
             _last_frame_sent_when = now
-            _last_frame_sent = bframe.compare_data
-            await self.game_data.put(bframe.payload)
+            _last_frame_sent = self.bframe.compare_data
+            await self.game_data.put(self.bframe.payload)
 
         while True:
+            if self.frames_missed == MAX_MISSED_FRAMES:
+                logger.error("Everdrive timeout")
+                return
             if self.game_control:
                 command = self.game_control.popleft()
                 if command is None:

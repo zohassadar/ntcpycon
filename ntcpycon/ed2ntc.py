@@ -174,6 +174,10 @@ class Server:
             logger.error(f"{type(exc).__name__}: {exc!s}")
         finally:
             self.connected_everdrives.pop(everdrive_idx, None)
+
+        for (e_idx, _), pair in self.data_pairs.items():
+            if e_idx == everdrive_idx:
+                await pair.end()
         logger.info(f"everdrive {everdrive_idx} connection ended")
 
     async def cmd_disconnect_everdrive(
@@ -202,7 +206,7 @@ class Server:
         for e_idx, r_idx in self.data_pairs:
             if e_idx == everdrive_idx:
                 logger.error(
-                    f"everdrive {everdrive_idx} already paired with room {r_idx}"
+                    f"everdrive {everdrive_idx} already paired with room {r_idx}",
                 )
                 return
             if r_idx == room_idx:
@@ -218,7 +222,7 @@ class Server:
         finally:
             self.data_pairs.pop((everdrive_idx, room_idx), None)
         logger.info(
-            f"Connection between everdrive {everdrive_idx} and room {room_idx} ended"
+            f"Connection between everdrive {everdrive_idx} and room {room_idx} ended",
         )
 
     async def cmd_disconnect_pair(
@@ -239,7 +243,7 @@ class Server:
                 await pair.end()
                 return
         logger.error(
-            f"No pair found between everdrive {everdrive_idx} and room {room_idx}"
+            f"No pair found between everdrive {everdrive_idx} and room {room_idx}",
         )
 
     async def cmd_check_status(self):
@@ -303,7 +307,7 @@ class Server:
                 logger.error("Invalid command %s", cmd)
             kwargs = data.get("kwargs", {})
             task = asyncio.create_task(
-                getattr(self, f"cmd_{cmd}", self.unknown)(**kwargs)
+                getattr(self, f"cmd_{cmd}", self.unknown)(**kwargs),
             )
             self._jobs.add(task)
             task.add_done_callback(self._jobs.discard)
@@ -385,7 +389,7 @@ Rooms:
         )
         parser.add_argument("room", type=int, metavar="<room>", choices=rooms)
         parser.add_argument(
-            "everdrive", type=int, metavar="<everdrive>", choices=everdrives
+            "everdrive", type=int, metavar="<everdrive>", choices=everdrives,
         )
         parser.add_argument(
             "-d",
@@ -446,7 +450,7 @@ Everdrives:
             formatter_class=argparse.RawDescriptionHelpFormatter,
         )
         parser.add_argument(
-            "everdrive", type=int, metavar="<everdrive>", choices=everdrives
+            "everdrive", type=int, metavar="<everdrive>", choices=everdrives,
         )
         parser.add_argument(
             "-d",
@@ -480,7 +484,7 @@ Everdrives:
         )
         parser.add_argument("rom", type=int, metavar="<rom>", choices=roms)
         parser.add_argument(
-            "everdrive", type=int, metavar="<everdrive>", choices=everdrives
+            "everdrive", type=int, metavar="<everdrive>", choices=everdrives,
         )
         try:
             args = parser.parse_args(raw_args.split())

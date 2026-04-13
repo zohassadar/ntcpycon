@@ -7,7 +7,7 @@ Connector for NESTrisChamps that can receive game data from the following source
 
 ## NESTrisOCR
 
-This receives frame data from NESTrisOCR and forwards it to one or more NESTrisChamps servers via a websocket.  Currently translates the data into a Version 3 [Binary Frame](https://github.com/timotheeg/nestrischamps/blob/main/public/js/BinaryFrame.js).    
+This receives frame data from NESTrisOCR and forwards it to one or more NESTrisChamps servers via a websocket.  Currently translates the data into a Version 3 [Binary Frame](https://github.com/timotheeg/nestrischamps/blob/main/public/js/BinaryFrame.js).
 
 Can also save the received frames to a file.  The frames can be played back to a NESTrisChamps server at a later time.
 
@@ -23,12 +23,12 @@ See [**INSTALL.md**](INSTALL.md) for installation steps
 
 Set up a configuration yaml file and run `ntcpycon <filename>.yml`.
 
-Without installing, can be run as a module:  `python -m ntcpycon` 
+Without installing, can be run as a module:  `python -m ntcpycon`
 
 
 ## Exiting
 
-Ctrl+C will cause the script to exit, but it takes 10-15 seconds for the connections to close before this happens.  Sending another Ctrl+C will cause it to exit immediately but will throw RuntimeError('Event loop is closed').  There's room for improvement.  
+Ctrl+C will cause the script to exit, but it takes 10-15 seconds for the connections to close before this happens.  Sending another Ctrl+C will cause it to exit immediately but will throw RuntimeError('Event loop is closed').  There's room for improvement.
 
 
 ## Example Starting Config
