@@ -1,0 +1,4 @@
+- wss://127.0.0.1:5000/ws/room/u/player1/producer/PLAYER1
+- wss://127.0.0.1:5000/ws/room/u/player1/producer/PLAYER2
+- wss://127.0.0.1:5000/ws/room/u/player1/producer/PLAYER3
+- wss://127.0.0.1:5000/ws/room/u/player1/producer/PLAYER4

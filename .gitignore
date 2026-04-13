@@ -4,6 +4,7 @@
 
 *.yml
 !example.yml
+!rooms-example.yml
 
 ignore_*
 
