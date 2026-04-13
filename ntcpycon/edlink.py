@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import logging
+import multiprocessing
 import sys
 import time
+from collections import deque
 
 import edlinkn8
 
@@ -22,6 +25,9 @@ MAX_MISSED_FRAMES = 5
 
 MAX_ED_RCV = 100
 MAX_ED_SEND = 100
+
+
+EVERDRIVE = deque(maxlen=1)
 
 
 class Chunker:
@@ -223,28 +229,54 @@ class EDLink(Receiver):
                 await queue.put(bframe.payload)
 
 
+def get_everdrive():
+    if not EVERDRIVE:
+        raise RuntimeError("everdrive not initialized")
+    return EVERDRIVE[0]
+
+
+def initialize_everdrive(serial):
+    EVERDRIVE.append(edlinkn8.Everdrive(serial=serial))
+
+
+def everdrive_read_fifo(size):
+    everdrive = get_everdrive()
+    return everdrive.receive_data(size)
+
+
+def everdrive_write_fifo(request):
+    everdrive = get_everdrive()
+    everdrive.write_fifo(request)
+
+
 class NewEDLink:
     def __init__(
         self,
         serial: str,
     ):
-        self.everdrive = edlinkn8.Everdrive(serial=serial)
         self.game_data = AsyncDeque(maxlen=MAX_ED_RCV)
         self.game_control = AsyncDeque(maxlen=MAX_ED_SEND)
         self.gym = GymMemory()
         self.bframe = BinaryFrame3()
         self.frames_missed = 0
+        self.serial = serial
 
     async def connect(self):
-        self.task = asyncio.create_task(self._connect())
-        await self.task
+        context = multiprocessing.get_context(method="fork")
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=1,
+            mp_context=context,
+            initializer=initialize_everdrive,
+            initargs=(self.serial,),
+        ) as pool:
+            self.task = asyncio.create_task(self._connect(pool))
+            await self.task
 
     async def end(self):
         await self.game_control.put(None)
         await self.task
-        self.everdrive.port.close()
 
-    async def _connect(self):
+    async def _connect(self, pool):
         loop = asyncio.get_running_loop()
         _last_fc = None
         _last_frame_sent = ()
@@ -264,8 +296,8 @@ class NewEDLink:
                 request = bytes([CompactOptions.REQUEST])
 
             await loop.run_in_executor(
-                None,
-                self.everdrive.write_fifo,
+                pool,
+                everdrive_write_fifo,
                 request,
             )
             if _pending_command:
@@ -274,8 +306,8 @@ class NewEDLink:
                 return
 
             frame = await loop.run_in_executor(
-                None,
-                self.everdrive.receive_data,
+                pool,
+                everdrive_read_fifo,
                 CompactOptions.SIZE,
             )
             # frame drop/error detection
