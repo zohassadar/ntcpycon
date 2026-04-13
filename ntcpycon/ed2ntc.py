@@ -96,7 +96,10 @@ class Server:
         self.connected_rooms = {}
         self.data_pairs = {}
 
+        self.ntc_rooms = {}
         self.load_ntc_rooms()
+
+        self.everdrives = {}
         self.load_everdrives()
         self._jobs = set()
 
@@ -129,10 +132,11 @@ class Server:
         try:
             room_uri = self.ntc_rooms[room_idx]
             ntc_ws = NewWSSender(room_uri, no_verify=True)
+            logger.info(f"connecting to room {room_idx}")
             self.connected_rooms[room_idx] = ntc_ws
             await ntc_ws.connect()
         except Exception as exc:
-            logger.error(f'{type(exc).__name__}: {exc!s}')
+            logger.error(f"{type(exc).__name__}: {exc!s}")
         finally:
             self.connected_rooms.pop(room_idx, None)
 
@@ -167,7 +171,7 @@ class Server:
         try:
             await edlink.connect()
         except Exception as exc:
-            logger.error(f'{type(exc).__name__}: {exc!s}')
+            logger.error(f"{type(exc).__name__}: {exc!s}")
         finally:
             self.connected_everdrives.pop(everdrive_idx, None)
         logger.info(f"everdrive {everdrive_idx} connection ended")
@@ -183,7 +187,7 @@ class Server:
         logger.info(f"disconnecting everdrive {everdrive_idx}")
         await edlink.end()
 
-    async def cmd_create_pair(
+    async def cmd_connect_pair(
         self,
         *,
         everdrive_idx: int,
@@ -204,31 +208,56 @@ class Server:
             if r_idx == room_idx:
                 logger.error(f"room {room_idx} already paired with everdrive {e_idx}")
                 return
-
+        logger.info(f"connecting everdrive {everdrive_idx} to room {room_idx}")
         pair = GameDataStream(edlink.game_data, ntc_ws.game_data)
         self.data_pairs[(everdrive_idx, room_idx)] = pair
         try:
             await pair.connect()
         except Exception as exc:
-            logger.error(f'{type(exc).__name__}: {exc!s}')
+            logger.error(f"{type(exc).__name__}: {exc!s}")
         finally:
             self.data_pairs.pop((everdrive_idx, room_idx), None)
-        logger.info(f"Connection between everdrive {everdrive_idx} and room {room_idx} ended")
+        logger.info(
+            f"Connection between everdrive {everdrive_idx} and room {room_idx} ended"
+        )
 
-    async def cmd_destroy_pair(
+    async def cmd_disconnect_pair(
         self,
         *,
-        debug: bool = False,
+        everdrive_idx: int,
+        room_idx: int,
     ):
-        pass
+        if self.connected_everdrives.get(everdrive_idx) is None:
+            logger.error(f"everdrive {everdrive_idx} not connected")
+            return
+        if self.connected_rooms.get(room_idx) is None:
+            logger.error(f"room {room_idx} not connected")
+            return
+        for ed_room, pair in self.data_pairs.items():
+            if ed_room == (everdrive_idx, room_idx):
+                logger.info(f"Disconnecting everdrive {everdrive_idx} from room {room_idx}")
+                await pair.end()
+                return
+        logger.error(
+            f"No pair found between everdrive {everdrive_idx} and room {room_idx}"
+        )
 
     async def cmd_check_status(self):
-        for idx, everdrive in self.connected_everdrives.items():
-            print(idx, everdrive)
-        for idx, room in self.connected_rooms.items():
-            print(idx, room)
+        logger.info(f"Everdrives:")
+        for idx, port in self.everdrives.items():
+            logger.info(f"Everdrive {idx} - {port}: {'connected' if self.connected_everdrives.get(idx) else 'idle'}")
+
+        logger.info(f"Rooms:")
+        for idx, room in self.ntc_rooms.items():
+            logger.info(f"Room {idx} - {room}: {'connected' if self.connected_rooms.get(idx) else 'idle'}")
+
+        logger.info (f"Active pairs:")
         for (e, r), pair in self.data_pairs.items():
-            print(e, r, pair)
+            logger.info(f"Everdrive {e} <-> room {r}")
+
+        logger.info (f"Active jobs:")
+        for job in self._jobs:
+            print(job.get_name())
 
     async def unknown(
         self,
@@ -273,7 +302,9 @@ class Server:
             if not cmd:
                 logger.error("Invalid command %s", cmd)
             kwargs = data.get("kwargs", {})
-            task = asyncio.create_task(getattr(self, f"cmd_{cmd}", self.unknown)(**kwargs))
+            task = asyncio.create_task(
+                getattr(self, f"cmd_{cmd}", self.unknown)(**kwargs)
+            )
             self._jobs.add(task)
             task.add_done_callback(self._jobs.discard)
 
@@ -297,7 +328,7 @@ class Client(cmd.Cmd):
     file = None
 
     def default(self, command):
-        print(f"{command!r} with {args!r} not defined", file=sys.stderr)
+        print(f"{command!r} not defined", file=sys.stderr)
 
     def do_build(self, args):
         build_args = DEFAULT_BUILD_ARGS + args.split()
@@ -365,7 +396,12 @@ Rooms:
             args = parser.parse_args(raw_args.split())
         except:
             return
-        send_command("create_pair", everdrive_idx=args.everdrive, room_idx=args.room)
+
+        send_command(
+            f"{'dis' if args.disconnect else ''}connect_pair",
+            everdrive_idx=args.everdrive,
+            room_idx=args.room,
+        )
 
     def do_wsc(self, raw_args):
         rooms = get_ntc_rooms()
@@ -389,17 +425,14 @@ Rooms:
             args = parser.parse_args(raw_args.split())
         except:
             return
-        room = rooms[args.room]
-
-        print(f"gonna connect or disconnect {room}")
-
         send_command(
             f"{'dis' if args.disconnect else ''}connect_room",
             room_idx=args.room,
         )
 
-    def do_stat(self,_):
+    def do_stat(self, _):
         send_command("check_status")
+
     def do_edc(self, raw_args):
         everdrives = get_everdrives()
         help_ = f"""
@@ -424,10 +457,6 @@ Everdrives:
             args = parser.parse_args(raw_args.split())
         except:
             return
-        everdrive = everdrives[args.everdrive]
-
-        print(f"gonna connect or disconnect {everdrive}")
-
         send_command(
             f"{'dis' if args.disconnect else ''}connect_everdrive",
             everdrive_idx=args.everdrive,
