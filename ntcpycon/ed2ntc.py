@@ -19,6 +19,9 @@ from ntcpycon.adeque import AsyncDeque
 from ntcpycon.edlink import NewEDLink
 from ntcpycon.ws_sender import NewWSSender
 
+PAYLOAD_SIZE = 200
+PAYLOADS = 4
+
 CONTROL_PORT = 9999
 NTC_ROOMS = "rooms.yml"
 GYM_PATH = pathlib.Path.cwd() / "TetrisGYM"
@@ -310,6 +313,34 @@ class Server:
         )
         await tcp_server.serve_forever()
 
+    async def game_stream(
+        self,
+        client_reader: asyncio.StreamReader,
+        client_writer: asyncio.StreamWriter,
+    ):
+        try:
+            logger.info("establishing game stream")
+            while True:
+                fields = 0
+                payload = bytearray(PAYLOAD_SIZE * PAYLOADS)
+                for _ in range(2):
+                    for everdrive in list(self.connected_everdrives.values()):
+                        span = slice(
+                            fields * PAYLOAD_SIZE,
+                            fields * PAYLOAD_SIZE + PAYLOAD_SIZE,
+                        )
+                        load = bytearray(PAYLOAD_SIZE)
+                        load[:200] = everdrive.gym._playfield[:200]
+                        fields += 1
+                        payload[span] = load
+                await client_reader.read(1)
+                client_writer.write(payload[: fields * PAYLOAD_SIZE])
+                await client_writer.drain()
+        except Exception as exc:
+            logger.error(f"{type(exc).__name__}: {exc}")
+        finally:
+            logger.info("game stream ended")
+
     async def handler(
         self,
         client_reader: asyncio.StreamReader,
@@ -332,10 +363,16 @@ class Server:
             cmd = data.get("cmd")
             if not cmd:
                 logger.error("Invalid command %s", cmd)
-            kwargs = data.get("kwargs", {})
-            task = asyncio.create_task(
-                getattr(self, f"cmd_{cmd}", self.unknown)(**kwargs),
-            )
+
+            if cmd == "game_stream":
+                task = asyncio.create_task(
+                    self.game_stream(client_reader, client_writer),
+                )
+            else:
+                kwargs = data.get("kwargs", {})
+                task = asyncio.create_task(
+                    getattr(self, f"cmd_{cmd}", self.unknown)(**kwargs),
+                )
             self._jobs.add(task)
             task.add_done_callback(self._jobs.discard)
 
