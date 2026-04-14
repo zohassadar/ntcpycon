@@ -4,15 +4,14 @@ import curses
 import socket
 import time
 
-PLAYFIELD = bytes(200)
-PAYLOAD_SIZE = 200
-PAYLOADS = 4
-
-
 from ntcpycon.ed2ntc import CONTROL_PORT
 from ntcpycon.ed2ntc import PAYLOAD_SIZE
 from ntcpycon.ed2ntc import PAYLOADS
+from ntcpycon.ed2ntc import Payload
 from ntcpycon.ed2ntc import encode_data
+from ntcpycon.gymmem import ORIENTATION_TO_ID
+
+PIECES = "TJZOSLI-"
 
 
 def draw_playfield_row(
@@ -39,32 +38,63 @@ def compare_row(playfield: bytes, last_playfield: bytes | bytearray, row: int):
 
 def c_main(stdscr: curses._CursesWindow) -> int:
     last_chunks = bytearray(PAYLOAD_SIZE * PAYLOADS)
+    ROW_OFFSET = 1
+    COL_OFFSET = 5
+    GAP = 18
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect(("localhost", CONTROL_PORT))
         init = encode_data(dict(cmd="game_stream"))
         s.sendall(init)
-        curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLUE)
-        line = 1
+        curses.init_pair(
+            1,
+            curses.COLOR_CYAN,
+            curses.COLOR_BLUE,
+        )
         while True:
-            # render cycle
-
-            # get input
-            # if char > 0:
-            #     stdscr.addstr(1, 0, f"{str(char):<30}")
-            #     stdscr.addstr(2, 0, f"{chr(char)!r:<30}")
-            #
-            # line += 1
-
             s.sendall(b"a")
             chunks = s.recv(PAYLOAD_SIZE * PAYLOADS)
             for idx in range(PAYLOADS):
-                span = slice(idx * PAYLOAD_SIZE, idx * PAYLOAD_SIZE + PAYLOAD_SIZE)
+                span = slice(
+                    idx * PAYLOAD_SIZE,
+                    idx * PAYLOAD_SIZE + PAYLOAD_SIZE,
+                )
                 if not len(chunk := chunks[span]) == PAYLOAD_SIZE:
                     continue
                 for row in range(20):
-                    if not compare_row(chunk, last_chunks[span], row):
-                        draw_playfield_row(stdscr, chunk, row, 0, idx * 20)
+                    if not compare_row(chunk[:200], last_chunks[span], row):
+                        draw_playfield_row(
+                            stdscr,
+                            chunk,
+                            row,
+                            ROW_OFFSET,
+                            idx * GAP + COL_OFFSET,
+                        )
+                score = int.from_bytes(chunk[Payload.score], byteorder="little")
+                lines = int.from_bytes(chunk[Payload.lines], byteorder="little")
+                level = chunk[Payload.level]
+                next_ = chunk[Payload.next_]
+                next_ = PIECES[ORIENTATION_TO_ID[next_]]
+                stdscr.addstr(
+                    20 + ROW_OFFSET,
+                    idx * GAP + COL_OFFSET,
+                    f"Next {next_:<2}",
+                )
+                stdscr.addstr(
+                    21 + ROW_OFFSET,
+                    idx * GAP + COL_OFFSET,
+                    f"Level {level:<3}",
+                )
+                stdscr.addstr(
+                    22 + ROW_OFFSET,
+                    idx * GAP + COL_OFFSET,
+                    f"Lines {lines:<4}",
+                )
+                stdscr.addstr(
+                    23 + ROW_OFFSET,
+                    idx * GAP + COL_OFFSET,
+                    f"Score {score:<7}",
+                )
                 last_chunks[span] = chunk
             stdscr.refresh()
     return 0

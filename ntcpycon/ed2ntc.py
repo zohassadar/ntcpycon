@@ -19,8 +19,20 @@ from ntcpycon.adeque import AsyncDeque
 from ntcpycon.edlink import NewEDLink
 from ntcpycon.ws_sender import NewWSSender
 
-PAYLOAD_SIZE = 200
-PAYLOADS = 4
+HISTORY = ".ed2ntc-history"
+HISTORY_MAX = 1000
+
+PAYLOAD_SIZE = 210  # 200 + 4 + 4 + 1 + 4 pfield score lines level next
+PAYLOADS = 2
+
+
+class Payload:
+    playfield = slice(200)
+    score = slice(200, 204)
+    lines = slice(204, 208)
+    level = 209
+    next_ = 208
+
 
 CONTROL_PORT = 9999
 NTC_ROOMS = "rooms.yml"
@@ -31,6 +43,7 @@ NODE = shutil.which("node")
 
 
 CMD_SEND_SEED = 0x44
+
 
 if NODE is None:
     raise RuntimeError("missing node")
@@ -323,16 +336,26 @@ class Server:
             while True:
                 fields = 0
                 payload = bytearray(PAYLOAD_SIZE * PAYLOADS)
-                for _ in range(2):
-                    for everdrive in list(self.connected_everdrives.values()):
-                        span = slice(
-                            fields * PAYLOAD_SIZE,
-                            fields * PAYLOAD_SIZE + PAYLOAD_SIZE,
-                        )
-                        load = bytearray(PAYLOAD_SIZE)
-                        load[:200] = everdrive.gym._playfield[:200]
-                        fields += 1
-                        payload[span] = load
+                for everdrive in list(self.connected_everdrives.values()):
+                    span = slice(
+                        fields * PAYLOAD_SIZE,
+                        fields * PAYLOAD_SIZE + PAYLOAD_SIZE,
+                    )
+                    load = bytearray(PAYLOAD_SIZE)
+                    load[Payload.playfield] = everdrive.gym._playfield[:200]
+                    load[Payload.score] = everdrive.gym.score.to_bytes(
+                        4,
+                        byteorder="little",
+                    )
+                    load[Payload.lines] = everdrive.gym.lines.to_bytes(
+                        4,
+                        byteorder="little",
+                    )
+                    load[Payload.level] = everdrive.gym.level
+                    load[Payload.next_] = everdrive.gym.next_piece
+
+                    fields += 1
+                    payload[span] = load
                 await client_reader.read(1)
                 client_writer.write(payload[: fields * PAYLOAD_SIZE])
                 await client_writer.drain()
@@ -394,6 +417,17 @@ class Client(cmd.Cmd):
 
     intro = "everdrive ntc connector.  Type help or ? to list commands.\n"
     file = None
+
+    def cmdloop(self, *args, **kwargs):
+        import readline
+
+        try:
+            readline.read_history_file(HISTORY)
+        except Exception:
+            logger.error(f"can't read {HISTORY}")
+        super().cmdloop(*args, **kwargs)
+        readline.set_history_length(HISTORY_MAX)
+        readline.write_history_file(HISTORY)
 
     @staticmethod
     def everdrive_help(everdrives):
@@ -499,7 +533,13 @@ Roms:
             description=help_,
             formatter_class=argparse.RawDescriptionHelpFormatter,
         )
-        parser.add_argument("room", type=int, metavar="<room>", choices=rooms)
+        parser.add_argument(
+            "room",
+            type=int,
+            nargs="+",
+            metavar="<room>",
+            choices=rooms,
+        )
         parser.add_argument(
             "-d",
             "--disconnect",
@@ -509,10 +549,11 @@ Roms:
             args = parser.parse_args(raw_args.split())
         except:
             return
-        send_command(
-            f"{'dis' if args.disconnect else ''}connect_room",
-            room_idx=args.room,
-        )
+        for room in args.room:
+            send_command(
+                f"{'dis' if args.disconnect else ''}connect_room",
+                room_idx=room,
+            )
 
     def do_stat(self, _):
         send_command("check_status")
@@ -611,6 +652,7 @@ Roms:
         parser.add_argument(
             "everdrive",
             type=int,
+            nargs="+",
             metavar="<everdrive>",
             choices=everdrives,
         )
@@ -623,22 +665,21 @@ Roms:
             args = parser.parse_args(raw_args.split())
         except:
             return
-        send_command(
-            f"{'dis' if args.disconnect else ''}connect_everdrive",
-            everdrive_idx=args.everdrive,
-        )
+        for everdrive in args.everdrive:
+            send_command(
+                f"{'dis' if args.disconnect else ''}connect_everdrive",
+                everdrive_idx=everdrive,
+            )
 
     def do_launch(self, raw_args):
         roms = get_roms()
         everdrives = get_everdrives()
-        help_ = f"""
-Roms:
-{'\n'.join(f"{idx}: {rom.name}" for idx,rom in roms.items())}
-
-Everdrives:
-{'\n'.join(f"{idx}: {everdrive}" for idx,everdrive in everdrives.items())}
-
-"""
+        help_ = "\n".join(
+            [
+                self.roms_help(roms),
+                self.everdrive_help(everdrives),
+            ],
+        )
         parser = argparse.ArgumentParser(
             prog="launch",
             description=help_,
@@ -647,6 +688,7 @@ Everdrives:
         parser.add_argument("rom", type=int, metavar="<rom>", choices=roms)
         parser.add_argument(
             "everdrive",
+            nargs="+",
             type=int,
             metavar="<everdrive>",
             choices=everdrives,
@@ -655,15 +697,14 @@ Everdrives:
             args = parser.parse_args(raw_args.split())
         except:
             return
-        everdrive = everdrives[args.everdrive]
         rom = roms[args.rom]
 
-        try:
-            Everdrive(serial=everdrive).launch_rom_from_file(rom)
-        except:
-            import traceback
-
-            traceback.print_exc()
+        for ed in args.everdrive:
+            everdrive = everdrives[ed]
+            try:
+                Everdrive(serial=everdrive).launch_rom_from_file(rom)
+            except Exception as exc:
+                print(f"{type(exc).__name__}: {exc}")
 
     def emptyline(self):
         pass
