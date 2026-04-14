@@ -4,11 +4,9 @@ import curses
 import socket
 import time
 
-from ntcpycon.ed2ntc import CONTROL_PORT
-from ntcpycon.ed2ntc import PAYLOAD_SIZE
-from ntcpycon.ed2ntc import PAYLOADS
-from ntcpycon.ed2ntc import Payload
-from ntcpycon.ed2ntc import encode_data
+from ntcpycon import CONTROL_PORT
+from ntcpycon import Payload
+from ntcpycon.client import encode_data
 from ntcpycon.gymmem import ORIENTATION_TO_ID
 
 PIECES = "TJZOSLI-"
@@ -37,7 +35,7 @@ def compare_row(playfield: bytes, last_playfield: bytes | bytearray, row: int):
 
 
 def c_main(stdscr: curses._CursesWindow) -> int:
-    last_chunks = bytearray(PAYLOAD_SIZE * PAYLOADS)
+    last_chunks = bytearray(Payload.SIZE * Payload.COUNT)
     ROW_OFFSET = 1
     COL_OFFSET = 5
     GAP = 18
@@ -53,16 +51,20 @@ def c_main(stdscr: curses._CursesWindow) -> int:
         )
         while True:
             s.sendall(b"a")
-            chunks = s.recv(PAYLOAD_SIZE * PAYLOADS)
-            for idx in range(PAYLOADS):
+            chunks = s.recv(Payload.SIZE * Payload.COUNT)
+            for idx in range(Payload.COUNT):
                 span = slice(
-                    idx * PAYLOAD_SIZE,
-                    idx * PAYLOAD_SIZE + PAYLOAD_SIZE,
+                    idx * Payload.SIZE,
+                    idx * Payload.SIZE + Payload.SIZE,
                 )
-                if not len(chunk := chunks[span]) == PAYLOAD_SIZE:
+                if not len(chunk := chunks[span]) == Payload.SIZE:
                     continue
                 for row in range(20):
-                    if not compare_row(chunk[:200], last_chunks[span], row):
+                    if not compare_row(
+                        chunk[Payload.playfield],
+                        last_chunks[span],
+                        row,
+                    ):
                         draw_playfield_row(
                             stdscr,
                             chunk,
