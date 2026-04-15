@@ -17,10 +17,12 @@ CMD_SEND_INPUT = 0x45
 
 class Payload:
     # 200 + 4 + 4 + 1 + 4 pfield score lines level next
-    SIZE = 210
-    COUNT = 2
+    SIZE = 212
+    COUNT = 4
     playfield = slice(200)
     score = slice(200, 204)
-    lines = slice(204, 208)
+    lines = slice(204, 206)
+    seed = slice(206, 209)
     level = 209
-    next_ = 208
+    next_ = 210
+    hearts_and_ready = 211

@@ -70,6 +70,10 @@ class ED2NTCCompactFrame:
         self.vram_row = 0
         self.padding = bytearray()
         self.stats = bytearray(14)
+        self.set_seed_input0 = 0
+        self.set_seed_input1 = 0
+        self.set_seed_input2 = 0
+        self.hearts_and_ready = 0
         self.playfield_chunk = bytearray([0xEF] * 40)
 
         # header 2
@@ -122,11 +126,18 @@ class ED2NTCCompactFrame:
 
             # ; autoRepeatX 1 current DAS
             self.autorepeat_x = c.one()
+
+            self.set_seed_input0 = c.one()
+            self.set_seed_input1 = c.one()
+            self.set_seed_input2 = c.one()
+
+            self.hearts_and_ready = c.one()
+
             # ; statsByType 14
             self.stats[:] = c.span(14)
 
             # padding 14
-            self.padding = c.span(14)
+            self.padding = c.span(10)
         else:
             self.vram_row = c.one()
             self.playfield_chunk[:] = c.span(40)
@@ -316,7 +327,6 @@ class NewEDLink:
                 logger.warning(f"Invalid frame length: {len(frame)}")
                 return
 
-            self.frames_missed = 0
             fc = int.from_bytes(frame[2:4], "little")
             if _last_fc is None:
                 logger.info(f"Discarding first frame: {fc:04X}")
@@ -336,8 +346,12 @@ class NewEDLink:
 
             edframe = ED2NTCCompactFrame(frame)
             if edframe.invalid:
+                self.frames_missed += 1
                 logger.error("Skipping invalid frame")
+                breakpoint()
                 return
+
+            self.frames_missed = 0
             self.gym.update_from_edlink_compact(edframe)
             self.bframe.update_from_gym_memory(self.gym)
 

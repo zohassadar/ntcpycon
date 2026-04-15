@@ -231,22 +231,20 @@ class Server:
         )
 
     async def cmd_check_status(self):
-        logger.info(f"\nEverdrives:")
         for idx, port in self.everdrives.items():
             logger.info(
                 f"{idx} - {port}: {'connected' if self.connected_everdrives.get(idx) else 'idle'}",
             )
 
-        logger.info(f"\nRooms:")
         for idx, room in self.ntc_rooms.items():
             logger.info(
                 f"{idx} - {room.split('/')[-1]}: {'connected' if self.connected_rooms.get(idx) else 'idle'}",
             )
 
-        logger.info(f"\nActive pairs:")
         for (e, r), pair in self.data_pairs.items():
             logger.info(f"Everdrive {e} <-> Room {r}")
 
+        logger.info(f"{len(self._jobs)=}")
         # logger.info(f"Active jobs:")
         # for job in self._jobs:
         #     print(job.get_name())
@@ -296,16 +294,22 @@ class Server:
                         byteorder="little",
                     )
                     load[Payload.lines] = everdrive.gym.lines.to_bytes(
-                        4,
+                        2,
                         byteorder="little",
                     )
+                    load[Payload.seed] = [
+                        everdrive.gym.set_seed_input2,
+                        everdrive.gym.set_seed_input1,
+                        everdrive.gym.set_seed_input0,
+                    ]
                     load[Payload.level] = everdrive.gym.level
                     load[Payload.next_] = everdrive.gym.next_piece
+                    load[Payload.hearts_and_ready] = everdrive.gym.hearts_and_ready
 
                     fields += 1
                     payload[span] = load
                 await client_reader.read(1)
-                client_writer.write(payload[: fields * Payload.SIZE])
+                client_writer.write(payload)
                 await client_writer.drain()
         except Exception as exc:
             logger.error(f"{type(exc).__name__}: {exc}")

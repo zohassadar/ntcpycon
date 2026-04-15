@@ -12,12 +12,13 @@ import sys
 
 from edlinkn8 import Everdrive
 
+from ntcpycon import BUILD_SCRIPT
 from ntcpycon import CMD_SEND_INPUT
 from ntcpycon import CMD_SEND_SEED
 from ntcpycon import CONTROL_PORT
 from ntcpycon import DEFAULT_BUILD_ARGS
 from ntcpycon import GYM_PATH
-from ntcpycon import Payload
+from ntcpycon import NODE
 from ntcpycon.server import get_everdrives
 from ntcpycon.server import get_ntc_rooms
 from ntcpycon.server import get_roms
@@ -246,9 +247,14 @@ Roms:
         )
         parser.add_argument(
             "everdrives",
-            nargs=2,
+            nargs="+",
             type=int,
             choices=everdrives,
+        )
+        parser.add_argument(
+            "-s",
+            "--seed",
+            type=lambda s: int(s, 16),
         )
         try:
             args = parser.parse_args(raw_args.split())
@@ -258,26 +264,29 @@ Roms:
             print(f"Choose unique everdrives")
             return
 
-        seed = [
-            random.randint(0x0, 0xFF),
-            random.randint(0x2, 0xFF),  # Avoid buggy seeds
-            random.randint(0x0, 0xFF),
-        ]
+        if args.seed:
+            seed = [
+                args.seed >> 16 & 0xFF,
+                args.seed >> 8 & 0xFF,
+                args.seed & 0xFF,
+            ]
+        else:
+            seed = [
+                random.randint(0x0, 0xFF),
+                random.randint(0x2, 0xFF),  # Avoid buggy seeds
+                random.randint(0x0, 0xFF),
+            ]
 
         print(
-            f"Generated seed {''.join(f'{b:02X}' for b in seed)} for "
-            f"everdrives {args.everdrives[0]} and {args.everdrives[1]}",
+            f"Sending seed {''.join(f'{b:02X}' for b in seed)} to "
+            f"everdrive(s): {','.join(str(e) for e in args.everdrives)}",
         )
-        send_command(
-            f"bytes_to_everdrive",
-            everdrive_idx=args.everdrives[0],
-            data=[CMD_SEND_SEED, *seed],
-        )
-        send_command(
-            f"bytes_to_everdrive",
-            everdrive_idx=args.everdrives[1],
-            data=[CMD_SEND_SEED, *seed],
-        )
+        for everdrive in args.everdrives:
+            send_command(
+                f"bytes_to_everdrive",
+                everdrive_idx=everdrive,
+                data=[CMD_SEND_SEED, *seed],
+            )
 
     def do_edc(self, raw_args):
         everdrives = get_everdrives()

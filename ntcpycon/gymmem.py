@@ -174,6 +174,10 @@ class GymMemory:
     stats_i_hi: int = 0
     gamemode: int = 0
     playstate: int = 0
+    set_seed_input0: int = 0
+    set_seed_input1: int = 0
+    set_seed_input2: int = 0
+    hearts_and_ready: int = 0
 
     _playfield_clear: bool = False
     _topout: bool = False
@@ -264,6 +268,11 @@ class GymMemory:
             self.stats_l_hi = edframe.stats[11]
             self.stats_i_lo = edframe.stats[12]
             self.stats_i_hi = edframe.stats[13]
+
+            self.set_seed_input0 = edframe.set_seed_input0
+            self.set_seed_input1 = edframe.set_seed_input1
+            self.set_seed_input2 = edframe.set_seed_input2
+            self.hearts_and_ready = edframe.hearts_and_ready
 
         if self.playstate == 8:
             self.spawn_autorepeat_x = self.autorepeat_x

@@ -35,10 +35,10 @@ def compare_row(playfield: bytes, last_playfield: bytes | bytearray, row: int):
 
 
 def c_main(stdscr: curses._CursesWindow) -> int:
-    last_chunks = bytearray(Payload.SIZE * Payload.COUNT)
+    last_chunks = bytearray([0xFF] * Payload.SIZE * Payload.COUNT)
     ROW_OFFSET = 1
-    COL_OFFSET = 5
-    GAP = 18
+    COL_OFFSET = 1
+    GAP = 12
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect(("localhost", CONTROL_PORT))
@@ -74,30 +74,42 @@ def c_main(stdscr: curses._CursesWindow) -> int:
                         )
                 score = int.from_bytes(chunk[Payload.score], byteorder="little")
                 lines = int.from_bytes(chunk[Payload.lines], byteorder="little")
+                seed = int.from_bytes(chunk[Payload.seed], byteorder="little")
                 level = chunk[Payload.level]
                 next_ = chunk[Payload.next_]
+                hearts_and_ready = chunk[Payload.hearts_and_ready]
                 next_ = PIECES[ORIENTATION_TO_ID[next_]]
                 stdscr.addstr(
                     20 + ROW_OFFSET,
                     idx * GAP + COL_OFFSET,
-                    f"Next {next_:<2}",
+                    f"Nxt {next_:<2}",
                 )
                 stdscr.addstr(
                     21 + ROW_OFFSET,
                     idx * GAP + COL_OFFSET,
-                    f"Level {level:<3}",
+                    f"Lvl {level:<3}",
                 )
                 stdscr.addstr(
                     22 + ROW_OFFSET,
                     idx * GAP + COL_OFFSET,
-                    f"Lines {lines:<4}",
+                    f"Lns {lines:<4}",
                 )
                 stdscr.addstr(
                     23 + ROW_OFFSET,
                     idx * GAP + COL_OFFSET,
-                    f"Score {score:<7}",
+                    f"Scr {score:<6}",
                 )
                 last_chunks[span] = chunk
+                stdscr.addstr(
+                    24 + ROW_OFFSET,
+                    idx * GAP + COL_OFFSET,
+                    f"{seed:06X}" if seed else "      ",
+                )
+                stdscr.addstr(
+                    25 + ROW_OFFSET,
+                    idx * GAP + COL_OFFSET,
+                    "READY!" if (hearts_and_ready & 0x80) == 0x80 else "      ",
+                )
             stdscr.refresh()
     return 0
 
