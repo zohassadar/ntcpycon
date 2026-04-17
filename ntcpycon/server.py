@@ -136,7 +136,7 @@ class Server:
             return
         logger.info(f"connecting everdrive {everdrive_idx}")
         everdrive = self.everdrives[everdrive_idx]
-        edlink = NewEDLink(serial=everdrive)
+        edlink = NewEDLink(serial=everdrive, player_id=everdrive_idx + 1)
         self.connected_everdrives[everdrive_idx] = edlink
         try:
             await edlink.connect()

@@ -264,6 +264,7 @@ class NewEDLink:
     def __init__(
         self,
         serial: str,
+        player_id: int,
     ):
         self.game_data = AsyncDeque(maxlen=MAX_ED_RCV)
         self.game_control = AsyncDeque(maxlen=MAX_ED_SEND)
@@ -271,6 +272,7 @@ class NewEDLink:
         self.bframe = BinaryFrame3()
         self.frames_missed = 0
         self.serial = serial
+        self.player_id = player_id
 
     async def connect(self):
         context = multiprocessing.get_context(method="fork")
@@ -304,7 +306,7 @@ class NewEDLink:
                 request = bytes(_pending_command)
                 logger.info(f"Game control command: {request.hex()!r}")
             else:
-                request = bytes([CompactOptions.REQUEST])
+                request = bytes([CompactOptions.REQUEST, self.player_id])
 
             await loop.run_in_executor(
                 pool,
