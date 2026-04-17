@@ -289,12 +289,20 @@ class GymMemory:
         return (hi * 100) + ((lo >> 4) * 10) + (lo & 0xF)
 
     @property
-    def spawn_autorepeat_x(self):
-        return self._spawn_autorepeat_x
+    def autorepeat_x(self):
+        "instant_das"
+        # hijacking das values to communicate topout or idle
+        if self._topout and not self._topout_timer:
+            return 0x1E
+        if self.gamemode != 4:
+            return 0x1D
+        return 0x1F
 
     @property
-    def autorepeat_x(self):
-        return self._autorepeat_x
+    def spawn_autorepeat_x(self):
+        "cur_piece_das"
+        # hijacking to signal everdrive.  0x1E not possible, not null
+        return 0x1E
 
     @property
     def current_piece_id(self):
@@ -327,40 +335,33 @@ class GymMemory:
             ],
         )
 
-    def _convert_stat_or_idle(self, hi, lo):
-        if self._topout and not self._topout_timer:
-            return 0x3FE
-        if self.gamemode != 4:
-            return 0x3FD
-        return self._hybrid_bcd_convert(hi, lo)
-
     @property
     def stats_t(self) -> int:
-        return self._convert_stat_or_idle(self.stats_t_hi, self.stats_t_lo)
+        return self._hybrid_bcd_convert(self.stats_t_hi, self.stats_t_lo)
 
     @property
     def stats_j(self) -> int:
-        return self._convert_stat_or_idle(self.stats_j_hi, self.stats_j_lo)
+        return self._hybrid_bcd_convert(self.stats_j_hi, self.stats_j_lo)
 
     @property
     def stats_z(self) -> int:
-        return self._convert_stat_or_idle(self.stats_z_hi, self.stats_z_lo)
+        return self._hybrid_bcd_convert(self.stats_z_hi, self.stats_z_lo)
 
     @property
     def stats_o(self) -> int:
-        return self._convert_stat_or_idle(self.stats_o_hi, self.stats_o_lo)
+        return self._hybrid_bcd_convert(self.stats_o_hi, self.stats_o_lo)
 
     @property
     def stats_s(self) -> int:
-        return self._convert_stat_or_idle(self.stats_s_hi, self.stats_s_lo)
+        return self._hybrid_bcd_convert(self.stats_s_hi, self.stats_s_lo)
 
     @property
     def stats_l(self) -> int:
-        return self._convert_stat_or_idle(self.stats_l_hi, self.stats_l_lo)
+        return self._hybrid_bcd_convert(self.stats_l_hi, self.stats_l_lo)
 
     @property
     def stats_i(self) -> int:
-        return self._convert_stat_or_idle(self.stats_i_hi, self.stats_i_lo)
+        return self._hybrid_bcd_convert(self.stats_i_hi, self.stats_i_lo)
 
     def overlay_piece(self):
         if self.current_piece > 0x12:
