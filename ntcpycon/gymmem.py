@@ -144,7 +144,6 @@ class GymMemory:
     current_piece: int = 0x13
     tetrimino_x: int = 0
     tetrimino_y: int = 0
-    autorepeat_x: int = 0
     frame_counter_lo: int = 0
     frame_counter_hi: int = 0
     level: int = 0
@@ -199,7 +198,8 @@ class GymMemory:
     _start_time: float = dataclasses.field(default_factory=lambda: time.time())
     elapsed: int = 0
     game_id: int = 0
-    spawn_autorepeat_x: int = 0
+    _autorepeat_x: int = 0
+    _spawn_autorepeat_x: int = 0
 
     gamemode: int = 0
     playstate: int = 0
@@ -237,7 +237,7 @@ class GymMemory:
             self.current_piece = edframe.current_piece
             self.tetrimino_x = edframe.tetrimino_x
             self.tetrimino_y = edframe.tetrimino_y
-            self.autorepeat_x = edframe.autorepeat_x
+            self._autorepeat_x = edframe.autorepeat_x
 
             self.lines_hi = edframe.lines1
             self.lines_lo = edframe.lines0
@@ -275,7 +275,7 @@ class GymMemory:
             self.hearts_and_ready = edframe.hearts_and_ready
 
         if self.playstate == 8:
-            self.spawn_autorepeat_x = self.autorepeat_x
+            self._spawn_autorepeat_x = self._autorepeat_x
 
         if self.gamemode == 4 != self._previous_state["gamemode"] != 4:
             self.game_id += 1
@@ -287,6 +287,14 @@ class GymMemory:
     @staticmethod
     def _hybrid_bcd_convert(hi: int, lo: int) -> int:
         return (hi * 100) + ((lo >> 4) * 10) + (lo & 0xF)
+
+    @property
+    def spawn_autorepeat_x(self):
+        return self._spawn_autorepeat_x
+
+    @property
+    def autorepeat_x(self):
+        return self._autorepeat_x
 
     @property
     def current_piece_id(self):
